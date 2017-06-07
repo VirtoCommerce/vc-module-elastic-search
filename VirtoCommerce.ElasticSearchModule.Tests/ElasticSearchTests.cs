@@ -14,7 +14,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         protected override ISearchProvider GetSearchProvider()
         {
             var host = Environment.GetEnvironmentVariable("TestElasticsearchHost") ?? "localhost:9200";
-            var provider = new ElasticSearchProvider(new Uri("http://" + host), "test", GetSettingsManager());
+            var provider = new ElasticSearchProvider(new SearchConnection($"server=http://{host};scope=test"), GetSettingsManager());
             return provider;
         }
 

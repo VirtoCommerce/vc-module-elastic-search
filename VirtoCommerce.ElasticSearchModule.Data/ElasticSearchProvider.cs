@@ -18,15 +18,10 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         private readonly Dictionary<string, Properties<IProperties>> _mappings = new Dictionary<string, Properties<IProperties>>();
 
         public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager)
-            : this(GetServerUrl(connection), connection?.Scope, settingsManager)
         {
-        }
-
-        public ElasticSearchProvider(Uri serverUrl, string scope, ISettingsManager settingsManager)
-        {
-            ServerUrl = serverUrl;
-            Scope = scope;
-            Client = new ElasticClient(serverUrl);
+            ServerUrl = GetServerUrl(connection);
+            Scope = connection?.Scope;
+            Client = new ElasticClient(ServerUrl);
             _settingsManager = settingsManager;
         }
 
@@ -362,7 +357,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected virtual string GetIndexName(string documentType)
         {
             // Use different index for each document type
-            return string.Join("-", Scope, documentType);
+            return string.Join("-", Scope, documentType).ToLowerInvariant();
         }
 
         protected virtual async Task<bool> IndexExistsAsync(string indexName)
@@ -418,18 +413,27 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         #endregion
 
 
-        protected static Uri GetServerUrl(ISearchConnection connection)
+        protected Uri GetServerUrl(ISearchConnection connection)
         {
-            Uri result;
-
             var server = connection?["server"];
 
-            if (!Uri.TryCreate(server, UriKind.Absolute, out result))
+            if (string.IsNullOrEmpty(server))
             {
-                result = new Uri("http://" + server);
+                throw new ArgumentException("'server' parameter must not be empty");
             }
 
-            return result;
+            if (server.StartsWith("https://"))
+            {
+                throw new ArgumentException("HTTPS connection is not supported");
+            }
+
+            if (!server.StartsWith("http://"))
+            {
+                server = "http://" + server;
+            }
+
+            server = server.TrimEnd('/');
+            return new Uri(server);
         }
     }
 }
