@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.12
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VirtoCommerce.ElasticSearchModule.Web", "VirtoCommerce.ElasticSearchModule.Web\VirtoCommerce.ElasticSearchModule.Web.csproj", "{FA89F201-8438-4C3E-B81B-E0715109377E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VirtoCommerce.ElasticSearchModule.Data", "VirtoCommerce.ElasticSearchModule.Data\VirtoCommerce.ElasticSearchModule.Data.csproj", "{AEF70947-E8AB-4A73-BFCD-A5286BAD7EDC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VirtoCommerce.ElasticSearchModule.Tests", "VirtoCommerce.ElasticSearchModule.Tests\VirtoCommerce.ElasticSearchModule.Tests.csproj", "{9DBB10FD-642F-4EA1-A90C-17C2A52B5B7D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FA89F201-8438-4C3E-B81B-E0715109377E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA89F201-8438-4C3E-B81B-E0715109377E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA89F201-8438-4C3E-B81B-E0715109377E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA89F201-8438-4C3E-B81B-E0715109377E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AEF70947-E8AB-4A73-BFCD-A5286BAD7EDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AEF70947-E8AB-4A73-BFCD-A5286BAD7EDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AEF70947-E8AB-4A73-BFCD-A5286BAD7EDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AEF70947-E8AB-4A73-BFCD-A5286BAD7EDC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9DBB10FD-642F-4EA1-A90C-17C2A52B5B7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9DBB10FD-642F-4EA1-A90C-17C2A52B5B7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9DBB10FD-642F-4EA1-A90C-17C2A52B5B7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9DBB10FD-642F-4EA1-A90C-17C2A52B5B7D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
