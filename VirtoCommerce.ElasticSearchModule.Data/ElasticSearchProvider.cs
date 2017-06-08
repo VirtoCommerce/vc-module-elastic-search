@@ -204,10 +204,10 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             if (fieldType == typeof(string))
             {
-                if (field.IsSearchable)
-                    return new TextProperty();
+                if (field.IsFilterable)
+                    return new KeywordProperty();
 
-                return new KeywordProperty();
+                return new TextProperty();
             }
 
             switch (fieldType.Name)
@@ -281,8 +281,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         {
             if (textProperty != null)
             {
-                textProperty.Index = true;
-                textProperty.Analyzer = SearchableFieldAnalyzerName;
+                textProperty.Index = field.IsSearchable;
+                textProperty.Analyzer = field.IsSearchable ? SearchableFieldAnalyzerName : null;
             }
         }
 
