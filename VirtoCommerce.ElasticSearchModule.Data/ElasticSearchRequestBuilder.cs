@@ -17,9 +17,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 Query = GetQuery(request),
                 PostFilter = GetFilters(request, availableFields),
                 Aggregations = GetAggregations(request, availableFields),
-                Sort = GetSorting(request.Sorting),
-                From = request.Skip,
-                Size = request.Take,
+                Sort = GetSorting(request?.Sorting),
+                From = request?.Skip,
+                Size = request?.Take,
             };
 
             return result;
@@ -90,7 +90,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         private static QueryContainer GetFilters(SearchRequest request, Properties<IProperties> availableFields)
         {
-            return GetFilterQueryRecursive(request.Filter, availableFields);
+            return GetFilterQueryRecursive(request?.Filter, availableFields);
         }
 
         private static QueryContainer GetFilterQueryRecursive(IFilter filter, Properties<IProperties> availableFields)
@@ -269,7 +269,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         {
             var result = new Dictionary<string, AggregationContainer>();
 
-            if (request.Aggregations != null)
+            if (request?.Aggregations != null)
             {
                 foreach (var aggregation in request.Aggregations)
                 {

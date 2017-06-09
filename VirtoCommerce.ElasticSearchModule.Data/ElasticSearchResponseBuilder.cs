@@ -46,7 +46,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         {
             var result = new List<AggregationResponse>();
 
-            if (request.Aggregations != null && searchResponseAggregations != null)
+            if (request?.Aggregations != null && searchResponseAggregations != null)
             {
                 foreach (var aggregationRequest in request.Aggregations)
                 {
