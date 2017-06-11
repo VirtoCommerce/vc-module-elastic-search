@@ -291,7 +291,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 }
             }
 
-            return result;
+            return result.Any() ? new AggregationDictionary(result) : null;
         }
 
         private static void AddTermAggregationRequest(IDictionary<string, AggregationContainer> container, string aggregationId, string field, QueryContainer filter, TermAggregationRequest termAggregationRequest)
