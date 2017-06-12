@@ -52,7 +52,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 {
                     var aggregation = new AggregationResponse
                     {
-                        Id = (aggregationRequest.Id ?? aggregationRequest.FieldName).ToLowerInvariant(),
+                        Id = aggregationRequest.Id ?? aggregationRequest.FieldName,
                         Values = new List<AggregationResponseValue>(),
                     };
 
@@ -67,7 +67,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     {
                         foreach (var value in rangeAggregationRequest.Values)
                         {
-                            var queryValueId = value.Id.ToLowerInvariant();
+                            var queryValueId = value.Id;
                             var responseValueId = $"{aggregation.Id}-{queryValueId}";
                             AddAggregationValue(aggregation, responseValueId, queryValueId, searchResponseAggregations);
                         }

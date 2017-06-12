@@ -8,7 +8,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
     {
         public static string ToElasticFieldName(string originalName)
         {
-            return originalName.ToLowerInvariant();
+            return originalName?.ToLowerInvariant();
         }
 
         public static string ToStringInvariant(this object value)

@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using Nest;
 using VirtoCommerce.Domain.Search;
@@ -273,8 +272,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             {
                 foreach (var aggregation in request.Aggregations)
                 {
+                    var aggregationId = aggregation.Id ?? aggregation.FieldName;
                     var fieldName = ElasticSearchHelper.ToElasticFieldName(aggregation.FieldName);
-                    var aggregationId = aggregation.Id ?? fieldName;
                     var filter = GetFilterQueryRecursive(aggregation.Filter, availableFields);
 
                     var termAggregationRequest = aggregation as TermAggregationRequest;
@@ -298,32 +297,45 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         {
             var facetSize = termAggregationRequest.Size;
 
-            var termsAggregation = new TermsAggregation(aggregationId)
-            {
-                Field = field,
-                Size = facetSize == null ? null : facetSize > 0 ? facetSize : int.MaxValue,
-            };
+            TermsAggregation termsAggregation = null;
 
-            if (termAggregationRequest.Values != null && termAggregationRequest.Values.Any())
+            if (!string.IsNullOrEmpty(field))
             {
-                termsAggregation.Include = new TermsIncludeExclude
+                termsAggregation = new TermsAggregation(aggregationId)
                 {
-                    Values = termAggregationRequest.Values
+                    Field = field,
+                    Size = facetSize == null ? null : facetSize > 0 ? facetSize : int.MaxValue,
                 };
+
+                if (termAggregationRequest.Values?.Any() == true)
+                {
+                    termsAggregation.Include = new TermsIncludeExclude
+                    {
+                        Values = termAggregationRequest.Values
+                    };
+                }
             }
 
             if (filter == null)
             {
-                container.Add(field, termsAggregation);
+                if (termsAggregation != null)
+                {
+                    container.Add(aggregationId, termsAggregation);
+                }
             }
             else
             {
                 var filterAggregation = new FilterAggregation(aggregationId)
                 {
                     Filter = filter,
-                    Aggregations = termsAggregation,
                 };
-                container.Add(field, filterAggregation);
+
+                if (termsAggregation != null)
+                {
+                    filterAggregation.Aggregations = termsAggregation;
+                }
+
+                container.Add(aggregationId, filterAggregation);
             }
         }
 
@@ -334,7 +346,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             foreach (var value in values)
             {
-                var aggregationValueId = string.Format(CultureInfo.InvariantCulture, "{0}-{1}", aggregationId, value.Id).ToLowerInvariant();
+                var aggregationValueId = $"{aggregationId}-{value.Id}";
                 var query = CreateTermRangeQuery(fieldName, value.Lower, value.Upper, value.IncludeLower, value.IncludeUpper);
 
                 var filterAggregation = new FilterAggregation(aggregationValueId)
