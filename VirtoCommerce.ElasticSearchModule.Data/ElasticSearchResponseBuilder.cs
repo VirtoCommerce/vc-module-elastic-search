@@ -61,7 +61,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
                     if (termAggregationRequest != null)
                     {
-                        AddAggregationValue(aggregation, aggregation.Id, aggregation.Id, searchResponseAggregations);
+                        AddAggregationValues(aggregation, aggregation.Id, aggregation.Id, searchResponseAggregations);
                     }
                     else if (rangeAggregationRequest?.Values != null)
                     {
@@ -69,7 +69,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                         {
                             var queryValueId = value.Id;
                             var responseValueId = $"{aggregation.Id}-{queryValueId}";
-                            AddAggregationValue(aggregation, responseValueId, queryValueId, searchResponseAggregations);
+                            AddAggregationValues(aggregation, responseValueId, queryValueId, searchResponseAggregations);
                         }
                     }
 
@@ -83,7 +83,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
-        private static void AddAggregationValue(AggregationResponse aggregation, string responseKey, string valueId, IReadOnlyDictionary<string, IAggregate> searchResponseAggregations)
+        private static void AddAggregationValues(AggregationResponse aggregation, string responseKey, string valueId, IReadOnlyDictionary<string, IAggregate> searchResponseAggregations)
         {
             if (searchResponseAggregations.ContainsKey(responseKey))
             {
