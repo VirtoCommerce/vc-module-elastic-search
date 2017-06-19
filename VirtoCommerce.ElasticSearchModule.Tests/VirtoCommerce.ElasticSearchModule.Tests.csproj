@@ -35,11 +35,11 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Castle.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=407dd0808d44fbdc, processorArchitecture=MSIL">
-      <HintPath>..\packages\Castle.Core.4.0.0\lib\net45\Castle.Core.dll</HintPath>
+    <Reference Include="Castle.Core, Version=4.1.0.0, Culture=neutral, PublicKeyToken=407dd0808d44fbdc, processorArchitecture=MSIL">
+      <HintPath>..\packages\Castle.Core.4.1.0\lib\net45\Castle.Core.dll</HintPath>
     </Reference>
-    <Reference Include="Moq, Version=4.7.25.0, Culture=neutral, PublicKeyToken=69f491c39445e920, processorArchitecture=MSIL">
-      <HintPath>..\packages\Moq.4.7.25\lib\net45\Moq.dll</HintPath>
+    <Reference Include="Moq, Version=4.7.49.0, Culture=neutral, PublicKeyToken=69f491c39445e920, processorArchitecture=MSIL">
+      <HintPath>..\packages\Moq.4.7.49\lib\net45\Moq.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -53,10 +53,10 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
     <Reference Include="VirtoCommerce.CoreModule.Search.Tests, Version=2.23.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\VirtoCommerce.CoreModule.Search.Tests.2.23.0-rc3\lib\net461\VirtoCommerce.CoreModule.Search.Tests.dll</HintPath>
+      <HintPath>..\packages\VirtoCommerce.CoreModule.Search.Tests.2.23.0-rc4\lib\net461\VirtoCommerce.CoreModule.Search.Tests.dll</HintPath>
     </Reference>
     <Reference Include="VirtoCommerce.Domain, Version=2.23.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\VirtoCommerce.Domain.2.23.0-rc3\lib\net461\VirtoCommerce.Domain.dll</HintPath>
+      <HintPath>..\packages\VirtoCommerce.Domain.2.23.0-rc4\lib\net461\VirtoCommerce.Domain.dll</HintPath>
     </Reference>
     <Reference Include="VirtoCommerce.Platform.Core, Version=2.13.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\VirtoCommerce.Platform.Core.2.13.0\lib\net461\VirtoCommerce.Platform.Core.dll</HintPath>
@@ -88,6 +88,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
