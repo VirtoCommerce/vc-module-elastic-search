@@ -12,7 +12,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
     public class ElasticSearchProvider : ISearchProvider
     {
         public const string SearchableFieldAnalyzerName = "searchable_field_analyzer";
-        public const string NGramFilterName = "ngram_filter";
+        public const string NGramFilterName = "custom_ngram";
+        public const string EdgeNGramFilterName = "custom_edge_ngram";
 
         private readonly ISettingsManager _settingsManager;
         private readonly Dictionary<string, Properties<IProperties>> _mappings = new Dictionary<string, Properties<IProperties>>();
@@ -376,7 +377,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected virtual IndexSettingsDescriptor ConfigureIndexSettings(IndexSettingsDescriptor settings, string documentType)
         {
             // https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html#mapping-limit-settings
-            var fieldsLimit = _settingsManager.GetValue("VirtoCommerce.Search.Elasticsearch.IndexTotalFieldsLimit", 1000);
+            var fieldsLimit = GetFieldsLimit();
 
             return settings
                 .Setting("index.mapping.total_fields.limit", fieldsLimit)
@@ -397,17 +398,46 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             // http://www.elasticsearch.org/guide/en/elasticsearch/guide/current/ngrams-compound-words.html
             return customAnalyzer
                 .Tokenizer("standard")
-                .Filters("lowercase", NGramFilterName);
+                .Filters("lowercase", GetTokenFilterName());
         }
 
         protected virtual TokenFiltersDescriptor ConfigureTokenFilters(TokenFiltersDescriptor tokenFilters, string documentType)
         {
-            return tokenFilters.NGram(NGramFilterName, descriptor => ConfigureNGramFilter(descriptor, documentType));
+            return tokenFilters
+                .NGram(NGramFilterName, descriptor => ConfigureNGramFilter(descriptor, documentType))
+                .EdgeNGram(EdgeNGramFilterName, descriptor => ConfigureEdgeNGramFilter(descriptor, documentType))
+                ;
         }
 
         protected virtual NGramTokenFilterDescriptor ConfigureNGramFilter(NGramTokenFilterDescriptor nGram, string documentType)
         {
-            return nGram.MinGram(3).MaxGram(20);
+            return nGram.MinGram(GetMinGram()).MaxGram(GetMaxGram());
+        }
+
+        protected virtual EdgeNGramTokenFilterDescriptor ConfigureEdgeNGramFilter(EdgeNGramTokenFilterDescriptor edgeNGram, string documentType)
+        {
+            return edgeNGram.MinGram(GetMinGram()).MaxGram(GetMaxGram());
+        }
+
+        protected virtual int GetFieldsLimit()
+        {
+            var fieldsLimit = _settingsManager.GetValue("VirtoCommerce.Search.Elasticsearch.IndexTotalFieldsLimit", 1000);
+            return fieldsLimit;
+        }
+
+        protected virtual string GetTokenFilterName()
+        {
+            return _settingsManager.GetValue("VirtoCommerce.Search.Elasticsearch.TokenFilter", EdgeNGramFilterName);
+        }
+
+        protected virtual int GetMinGram()
+        {
+            return _settingsManager.GetValue("VirtoCommerce.Search.Elasticsearch.NGramTokenFilter.MinGram", 1);
+        }
+
+        protected virtual int GetMaxGram()
+        {
+            return _settingsManager.GetValue("VirtoCommerce.Search.Elasticsearch.NGramTokenFilter.MaxGram", 20);
         }
 
         #endregion
