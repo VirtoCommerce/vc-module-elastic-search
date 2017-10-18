@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,12 +17,32 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         private readonly ISettingsManager _settingsManager;
         private readonly Dictionary<string, Properties<IProperties>> _mappings = new Dictionary<string, Properties<IProperties>>();
+        private readonly string _accessUser;
+        private readonly string _accessKey;
 
         public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager)
         {
             ServerUrl = GetServerUrl(connection);
             Scope = connection?.Scope;
-            Client = new ElasticClient(ServerUrl);
+
+            var config = new ConnectionSettings(ServerUrl);
+
+            _accessUser = GetAccessUser(connection);
+            _accessKey = GetAccessKey(connection);
+
+            if (!string.IsNullOrEmpty(_accessUser) && !string.IsNullOrEmpty(_accessKey))
+            {
+                config.BasicAuthentication(_accessUser, _accessKey);
+            }
+            else if (!string.IsNullOrEmpty(_accessKey))
+            {
+                // elastic is default name for elastic cloud
+                config.BasicAuthentication("elastic", _accessKey);
+            }
+
+            Client = new ElasticClient(config);
+
+
             _settingsManager = settingsManager;
         }
 
@@ -452,18 +472,24 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 throw new ArgumentException("'server' parameter must not be empty");
             }
 
-            if (server.StartsWith("https://"))
-            {
-                throw new ArgumentException("HTTPS connection is not supported");
-            }
-
-            if (!server.StartsWith("http://"))
+            if (!server.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                !server.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
                 server = "http://" + server;
             }
 
             server = server.TrimEnd('/');
             return new Uri(server);
+        }
+
+        protected static string GetAccessUser(ISearchConnection connection)
+        {
+            return connection?["AccessUser"] ?? connection?["user"];
+        }
+
+        protected static string GetAccessKey(ISearchConnection connection)
+        {
+            return connection?["AccessKey"] ?? connection?["key"];
         }
     }
 }
