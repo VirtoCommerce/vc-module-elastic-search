@@ -17,35 +17,38 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         private readonly ISettingsManager _settingsManager;
         private readonly Dictionary<string, Properties<IProperties>> _mappings = new Dictionary<string, Properties<IProperties>>();
-        private readonly string _accessUser;
-        private readonly string _accessKey;
 
         public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager)
         {
             ServerUrl = GetServerUrl(connection);
             Scope = connection?.Scope;
 
-            var config = new ConnectionSettings(ServerUrl);
-
-            _accessUser = GetAccessUser(connection);
-            _accessKey = GetAccessKey(connection);
-
-            if (!string.IsNullOrEmpty(_accessUser) && !string.IsNullOrEmpty(_accessKey))
-            {
-                config.BasicAuthentication(_accessUser, _accessKey);
-            }
-            else if (!string.IsNullOrEmpty(_accessKey))
-            {
-                // elastic is default name for elastic cloud
-                config.BasicAuthentication("elastic", _accessKey);
-            }
+            var config = GetConnectionSettings(connection);
 
             Client = new ElasticClient(config);
-
 
             _settingsManager = settingsManager;
         }
 
+        private ConnectionSettings GetConnectionSettings(ISearchConnection connection)
+        {
+            var config = new ConnectionSettings(ServerUrl);
+
+            var accessUser = GetAccessUser(connection);
+            var accessKey = GetAccessKey(connection);
+
+            if (!string.IsNullOrEmpty(accessUser) && !string.IsNullOrEmpty(accessKey))
+            {
+                config.BasicAuthentication(accessUser, accessKey);
+            }
+            else if (!string.IsNullOrEmpty(accessKey))
+            {
+                // elastic is default name for elastic cloud
+                config.BasicAuthentication("elastic", accessKey);
+            }
+
+            return config;
+        }
 
         protected Uri ServerUrl { get; }
         protected string Scope { get; }
