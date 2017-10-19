@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -22,10 +22,33 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         {
             ServerUrl = GetServerUrl(connection);
             Scope = connection?.Scope;
-            Client = new ElasticClient(ServerUrl);
+
+            var config = GetConnectionSettings(connection);
+
+            Client = new ElasticClient(config);
+
             _settingsManager = settingsManager;
         }
 
+        private ConnectionSettings GetConnectionSettings(ISearchConnection connection)
+        {
+            var config = new ConnectionSettings(ServerUrl);
+
+            var accessUser = GetAccessUser(connection);
+            var accessKey = GetAccessKey(connection);
+
+            if (!string.IsNullOrEmpty(accessUser) && !string.IsNullOrEmpty(accessKey))
+            {
+                config.BasicAuthentication(accessUser, accessKey);
+            }
+            else if (!string.IsNullOrEmpty(accessKey))
+            {
+                // elastic is default name for elastic cloud
+                config.BasicAuthentication("elastic", accessKey);
+            }
+
+            return config;
+        }
 
         protected Uri ServerUrl { get; }
         protected string Scope { get; }
@@ -452,18 +475,24 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 throw new ArgumentException("'server' parameter must not be empty");
             }
 
-            if (server.StartsWith("https://"))
-            {
-                throw new ArgumentException("HTTPS connection is not supported");
-            }
-
-            if (!server.StartsWith("http://"))
+            if (!server.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                !server.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
                 server = "http://" + server;
             }
 
             server = server.TrimEnd('/');
             return new Uri(server);
+        }
+
+        protected static string GetAccessUser(ISearchConnection connection)
+        {
+            return connection?["AccessUser"] ?? connection?["user"];
+        }
+
+        protected static string GetAccessKey(ISearchConnection connection)
+        {
+            return connection?["AccessKey"] ?? connection?["key"];
         }
     }
 }
