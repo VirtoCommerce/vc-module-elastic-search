@@ -18,16 +18,28 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         private readonly ISettingsManager _settingsManager;
         private readonly Dictionary<string, Properties<IProperties>> _mappings = new Dictionary<string, Properties<IProperties>>();
 
-        public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager)
+        public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager, ElasticClient client)
         {
-            ServerUrl = GetServerUrl(connection);
+            _settingsManager = settingsManager;
             Scope = connection?.Scope;
 
-            var config = GetConnectionSettings(connection);
+            if (client != null)
+            {
+                ServerUrl = client.ConnectionSettings.ConnectionPool.Nodes.First().Uri;
+                Client = client;
+            }
+            else
+            {
+                ServerUrl = GetServerUrl(connection);
+                var config = GetConnectionSettings(connection);
+                Client = new ElasticClient(config);
+            }
+        }
 
-            Client = new ElasticClient(config);
-
-            _settingsManager = settingsManager;
+        // Separate constructor for backwards compatibility.
+        public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager)
+            : this(connection, settingsManager, null)
+        {
         }
 
         private ConnectionSettings GetConnectionSettings(ISearchConnection connection)
