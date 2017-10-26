@@ -16,11 +16,14 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         public const string EdgeNGramFilterName = "custom_edge_ngram";
 
         private readonly ISettingsManager _settingsManager;
+        private ElasticSearchRequestBuilder _requestBuilder;
         private readonly Dictionary<string, Properties<IProperties>> _mappings = new Dictionary<string, Properties<IProperties>>();
 
-        public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager, ElasticClient client)
+        public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager,
+            ElasticClient client, ElasticSearchRequestBuilder requestBuilder = null)
         {
             _settingsManager = settingsManager;
+            _requestBuilder = requestBuilder ?? new ElasticSearchRequestBuilder();
             Scope = connection?.Scope;
 
             if (client != null)
@@ -164,7 +167,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             try
             {
                 var availableFields = await GetMappingAsync(indexName, documentType);
-                var providerRequest = ElasticSearchRequestBuilder.BuildRequest(request, indexName, documentType, availableFields);
+                var providerRequest = _requestBuilder.BuildRequest(request, indexName, documentType, availableFields);
                 providerResponse = await Client.SearchAsync<SearchDocument>(providerRequest);
             }
             catch (Exception ex)
