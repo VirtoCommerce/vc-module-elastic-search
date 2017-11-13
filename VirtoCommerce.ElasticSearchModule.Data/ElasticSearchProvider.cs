@@ -16,7 +16,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         public const string EdgeNGramFilterName = "custom_edge_ngram";
 
         private readonly ISettingsManager _settingsManager;
-        private ElasticSearchRequestBuilder _requestBuilder;
+        private readonly ElasticSearchRequestBuilder _requestBuilder;
         private readonly Dictionary<string, Properties<IProperties>> _mappings = new Dictionary<string, Properties<IProperties>>();
 
         public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager,
