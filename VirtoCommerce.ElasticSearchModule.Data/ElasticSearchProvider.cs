@@ -16,58 +16,31 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         public const string EdgeNGramFilterName = "custom_edge_ngram";
 
         private readonly ISettingsManager _settingsManager;
-        private readonly ElasticSearchRequestBuilder _requestBuilder;
         private readonly Dictionary<string, Properties<IProperties>> _mappings = new Dictionary<string, Properties<IProperties>>();
 
-        public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager,
-            ElasticClient client, ElasticSearchRequestBuilder requestBuilder = null)
+        public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager)
+            : this(connection, settingsManager, new ElasticClient(GetConnectionSettings(connection)))
+        {
+        }
+
+        public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager, IElasticClient client)
+            : this(connection, settingsManager, client, new ElasticSearchRequestBuilder())
+        {
+        }
+
+        public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager, IElasticClient client, ElasticSearchRequestBuilder requestBuilder)
         {
             _settingsManager = settingsManager;
-            _requestBuilder = requestBuilder ?? new ElasticSearchRequestBuilder();
-            Scope = connection?.Scope;
-
-            if (client != null)
-            {
-                ServerUrl = client.ConnectionSettings.ConnectionPool.Nodes.First().Uri;
-                Client = client;
-            }
-            else
-            {
-                ServerUrl = GetServerUrl(connection);
-                var config = GetConnectionSettings(connection);
-                Client = new ElasticClient(config);
-            }
+            Client = client;
+            RequestBuilder = requestBuilder;
+            Scope = connection.Scope;
+            ServerUrl = client.ConnectionSettings.ConnectionPool.Nodes.First().Uri;
         }
 
-        // Separate constructor for backwards compatibility.
-        public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager)
-            : this(connection, settingsManager, null)
-        {
-        }
-
-        private ConnectionSettings GetConnectionSettings(ISearchConnection connection)
-        {
-            var config = new ConnectionSettings(ServerUrl);
-
-            var accessUser = GetAccessUser(connection);
-            var accessKey = GetAccessKey(connection);
-
-            if (!string.IsNullOrEmpty(accessUser) && !string.IsNullOrEmpty(accessKey))
-            {
-                config.BasicAuthentication(accessUser, accessKey);
-            }
-            else if (!string.IsNullOrEmpty(accessKey))
-            {
-                // elastic is default name for elastic cloud
-                config.BasicAuthentication("elastic", accessKey);
-            }
-
-            return config;
-        }
-
-        protected Uri ServerUrl { get; }
+        protected IElasticClient Client { get; }
+        protected ElasticSearchRequestBuilder RequestBuilder { get; }
         protected string Scope { get; }
-        protected ElasticClient Client { get; }
+        protected Uri ServerUrl { get; }
 
 
         public virtual async Task DeleteIndexAsync(string documentType)
@@ -167,7 +140,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             try
             {
                 var availableFields = await GetMappingAsync(indexName, documentType);
-                var providerRequest = _requestBuilder.BuildRequest(request, indexName, documentType, availableFields);
+                var providerRequest = RequestBuilder.BuildRequest(request, indexName, documentType, availableFields);
                 providerResponse = await Client.SearchAsync<SearchDocument>(providerRequest);
             }
             catch (Exception ex)
@@ -481,7 +454,28 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         #endregion
 
 
-        protected Uri GetServerUrl(ISearchConnection connection)
+        protected static IConnectionSettingsValues GetConnectionSettings(ISearchConnection connection)
+        {
+            var serverUrl = GetServerUrl(connection);
+            var accessUser = GetAccessUser(connection);
+            var accessKey = GetAccessKey(connection);
+
+            var connectionSettings = new ConnectionSettings(serverUrl);
+
+            if (!string.IsNullOrEmpty(accessUser) && !string.IsNullOrEmpty(accessKey))
+            {
+                connectionSettings.BasicAuthentication(accessUser, accessKey);
+            }
+            else if (!string.IsNullOrEmpty(accessKey))
+            {
+                // elastic is default name for elastic cloud
+                connectionSettings.BasicAuthentication("elastic", accessKey);
+            }
+
+            return connectionSettings;
+        }
+
+        protected static Uri GetServerUrl(ISearchConnection connection)
         {
             var server = connection?["server"];
 
