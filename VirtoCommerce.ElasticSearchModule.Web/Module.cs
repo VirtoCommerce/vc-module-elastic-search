@@ -1,8 +1,9 @@
-﻿using Microsoft.Practices.Unity;
+using Microsoft.Practices.Unity;
 using VirtoCommerce.Domain.Search;
 using VirtoCommerce.ElasticSearchModule.Data;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Modularity;
+using VirtoCommerce.Platform.Core.Settings;
 
 namespace VirtoCommerce.ElasticSearchModule.Web
 {
@@ -23,7 +24,12 @@ namespace VirtoCommerce.ElasticSearchModule.Web
 
             if (searchConnection?.Provider?.EqualsInvariant("ElasticSearch") == true)
             {
-                _container.RegisterType<ISearchProvider, ElasticSearchProvider>(new ContainerControlledLifetimeManager());
+                _container.RegisterType<ISearchProvider>(
+                    new ContainerControlledLifetimeManager(),
+                    new InjectionFactory(c => new ElasticSearchProvider(
+                        c.Resolve<ISearchConnection>(),
+                        c.Resolve<ISettingsManager>()))
+                );
             }
         }
     }

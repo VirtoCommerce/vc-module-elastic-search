@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using Nest;
 using VirtoCommerce.Domain.Search;
@@ -9,7 +9,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 {
     public class ElasticSearchRequestBuilder
     {
-        public static ISearchRequest BuildRequest(SearchRequest request, string indexName, string documentType, Properties<IProperties> availableFields)
+        public virtual ISearchRequest BuildRequest(SearchRequest request, string indexName, string documentType, Properties<IProperties> availableFields)
         {
             var result = new Nest.SearchRequest(indexName, documentType)
             {
@@ -25,7 +25,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         }
 
 
-        private static QueryContainer GetQuery(SearchRequest request)
+        protected virtual QueryContainer GetQuery(SearchRequest request)
         {
             QueryContainer result = null;
 
@@ -53,13 +53,13 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
-        private static IList<ISort> GetSorting(IEnumerable<SortingField> fields)
+        protected virtual IList<ISort> GetSorting(IEnumerable<SortingField> fields)
         {
             var result = fields?.Select(GetSortingField).ToArray();
             return result;
         }
 
-        private static ISort GetSortingField(SortingField field)
+        protected virtual ISort GetSortingField(SortingField field)
         {
             ISort result;
 
@@ -87,12 +87,12 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
-        private static QueryContainer GetFilters(SearchRequest request, Properties<IProperties> availableFields)
+        protected virtual QueryContainer GetFilters(SearchRequest request, Properties<IProperties> availableFields)
         {
             return GetFilterQueryRecursive(request?.Filter, availableFields);
         }
 
-        private static QueryContainer GetFilterQueryRecursive(IFilter filter, Properties<IProperties> availableFields)
+        protected virtual QueryContainer GetFilterQueryRecursive(IFilter filter, Properties<IProperties> availableFields)
         {
             QueryContainer result = null;
 
@@ -136,7 +136,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
-        private static QueryContainer CreateIdsFilter(IdsFilter idsFilter)
+        protected virtual QueryContainer CreateIdsFilter(IdsFilter idsFilter)
         {
             QueryContainer result = null;
 
@@ -148,7 +148,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
-        private static QueryContainer CreateTermFilter(TermFilter termFilter, Properties<IProperties> availableFields)
+        protected virtual QueryContainer CreateTermFilter(TermFilter termFilter, Properties<IProperties> availableFields)
         {
             var termValues = termFilter.Values;
 
@@ -165,7 +165,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             };
         }
 
-        private static QueryContainer CreateRangeFilter(RangeFilter rangeFilter)
+        protected virtual QueryContainer CreateRangeFilter(RangeFilter rangeFilter)
         {
             QueryContainer result = null;
 
@@ -178,7 +178,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
-        private static QueryContainer CreateGeoDistanceFilter(GeoDistanceFilter geoDistanceFilter)
+        protected virtual QueryContainer CreateGeoDistanceFilter(GeoDistanceFilter geoDistanceFilter)
         {
             return new GeoDistanceQuery
             {
@@ -188,7 +188,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             };
         }
 
-        private static QueryContainer CreateNotFilter(NotFilter notFilter, Properties<IProperties> availableFields)
+        protected virtual QueryContainer CreateNotFilter(NotFilter notFilter, Properties<IProperties> availableFields)
         {
             QueryContainer result = null;
 
@@ -200,7 +200,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
-        private static QueryContainer CreateAndFilter(AndFilter andFilter, Properties<IProperties> availableFields)
+        protected virtual QueryContainer CreateAndFilter(AndFilter andFilter, Properties<IProperties> availableFields)
         {
             QueryContainer result = null;
 
@@ -215,7 +215,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
-        private static QueryContainer CreateOrFilter(OrFilter orFilter, Properties<IProperties> availableFields)
+        protected virtual QueryContainer CreateOrFilter(OrFilter orFilter, Properties<IProperties> availableFields)
         {
             QueryContainer result = null;
 
@@ -231,14 +231,14 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         }
 
 
-        private static TermRangeQuery CreateTermRangeQuery(string fieldName, RangeFilterValue value)
+        protected virtual TermRangeQuery CreateTermRangeQuery(string fieldName, RangeFilterValue value)
         {
             var lower = string.IsNullOrEmpty(value.Lower) ? null : value.Lower;
             var upper = string.IsNullOrEmpty(value.Upper) ? null : value.Upper;
             return CreateTermRangeQuery(fieldName, lower, upper, value.IncludeLower, value.IncludeUpper);
         }
 
-        private static TermRangeQuery CreateTermRangeQuery(string fieldName, string lower, string upper, bool includeLower, bool includeUpper)
+        protected virtual TermRangeQuery CreateTermRangeQuery(string fieldName, string lower, string upper, bool includeLower, bool includeUpper)
         {
             var termRangeQuery = new TermRangeQuery { Field = fieldName };
 
@@ -264,7 +264,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         }
 
 
-        private static AggregationDictionary GetAggregations(SearchRequest request, Properties<IProperties> availableFields)
+        protected virtual AggregationDictionary GetAggregations(SearchRequest request, Properties<IProperties> availableFields)
         {
             var result = new Dictionary<string, AggregationContainer>();
 
@@ -293,7 +293,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result.Any() ? new AggregationDictionary(result) : null;
         }
 
-        private static void AddTermAggregationRequest(IDictionary<string, AggregationContainer> container, string aggregationId, string field, QueryContainer filter, TermAggregationRequest termAggregationRequest)
+        protected virtual void AddTermAggregationRequest(IDictionary<string, AggregationContainer> container, string aggregationId, string field, QueryContainer filter, TermAggregationRequest termAggregationRequest)
         {
             var facetSize = termAggregationRequest.Size;
 
@@ -339,7 +339,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
         }
 
-        private static void AddRangeAggregationRequest(Dictionary<string, AggregationContainer> container, string aggregationId, string fieldName, IEnumerable<RangeAggregationRequestValue> values)
+        protected virtual void AddRangeAggregationRequest(Dictionary<string, AggregationContainer> container, string aggregationId, string fieldName, IEnumerable<RangeAggregationRequestValue> values)
         {
             if (values == null)
                 return;

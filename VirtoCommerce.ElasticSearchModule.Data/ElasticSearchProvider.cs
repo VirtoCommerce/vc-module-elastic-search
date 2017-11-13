@@ -16,18 +16,33 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         public const string EdgeNGramFilterName = "custom_edge_ngram";
 
         private readonly ISettingsManager _settingsManager;
+        private readonly ElasticSearchRequestBuilder _requestBuilder;
         private readonly Dictionary<string, Properties<IProperties>> _mappings = new Dictionary<string, Properties<IProperties>>();
 
-        public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager)
+        public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager,
+            ElasticClient client, ElasticSearchRequestBuilder requestBuilder = null)
         {
-            ServerUrl = GetServerUrl(connection);
+            _settingsManager = settingsManager;
+            _requestBuilder = requestBuilder ?? new ElasticSearchRequestBuilder();
             Scope = connection?.Scope;
 
-            var config = GetConnectionSettings(connection);
+            if (client != null)
+            {
+                ServerUrl = client.ConnectionSettings.ConnectionPool.Nodes.First().Uri;
+                Client = client;
+            }
+            else
+            {
+                ServerUrl = GetServerUrl(connection);
+                var config = GetConnectionSettings(connection);
+                Client = new ElasticClient(config);
+            }
+        }
 
-            Client = new ElasticClient(config);
-
-            _settingsManager = settingsManager;
+        // Separate constructor for backwards compatibility.
+        public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager)
+            : this(connection, settingsManager, null)
+        {
         }
 
         private ConnectionSettings GetConnectionSettings(ISearchConnection connection)
@@ -152,7 +167,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             try
             {
                 var availableFields = await GetMappingAsync(indexName, documentType);
-                var providerRequest = ElasticSearchRequestBuilder.BuildRequest(request, indexName, documentType, availableFields);
+                var providerRequest = _requestBuilder.BuildRequest(request, indexName, documentType, availableFields);
                 providerResponse = await Client.SearchAsync<SearchDocument>(providerRequest);
             }
             catch (Exception ex)
