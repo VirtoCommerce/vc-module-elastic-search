@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package>
+    <metadata>
+        <id>$id$</id>
+        <version>$version$</version>
+        <title>$title$</title>
+        <authors>Artem Dudarev</authors>
+        <owners>Virto Commerce</owners>
+        <licenseUrl>https://github.com/VirtoCommerce/vc-module-elastic-search/raw/master/LICENSE</licenseUrl>
+        <projectUrl>https://github.com/VirtoCommerce/vc-module-elastic-search</projectUrl>
+        <iconUrl>https://github.com/VirtoCommerce/vc-module-elastic-search/raw/master/NuGet/icon.png</iconUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>Indexed search functionality with Elasticsearch engine</description>
+        <copyright>Copyright © 2017 Virto Commerce. All rights reserved</copyright>
+    </metadata>
+</package>
