@@ -70,7 +70,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 result = new GeoDistanceSort
                 {
                     Field = ElasticSearchHelper.ToElasticFieldName(field.FieldName),
-                    Points = new[] { geoSorting.Location.ToGeoLocation() }
+                    Points = new[] { geoSorting.Location.ToGeoLocation() },
+                    Order = geoSorting.IsDescending ? SortOrder.Descending : SortOrder.Ascending,
                 };
             }
             else
