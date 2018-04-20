@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <module>
     <id>VirtoCommerce.Elasticsearch</id>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
     <platformVersion>2.13.9</platformVersion>
     <dependencies>
         <dependency id="VirtoCommerce.Core" version="2.23.0" />
@@ -18,7 +18,7 @@
     <projectUrl>https://virtocommerce.com/apps/extensions/virto-elasticsearch-module</projectUrl>
     <iconUrl>https://github.com/VirtoCommerce/vc-module-elastic-search/raw/dev/VirtoCommerce.ElasticSearchModule.Web/Content/logo.png</iconUrl>
     <releaseNotes>First version.</releaseNotes>
-    <copyright>Copyright © 2017 Virto Commerce. All rights reserved</copyright>
+    <copyright>Copyright © 2017-2018 Virto Commerce. All rights reserved</copyright>
     <tags>elasticsearch search</tags>
 
     <assemblyFile>VirtoCommerce.ElasticSearchModule.Web.dll</assemblyFile>
