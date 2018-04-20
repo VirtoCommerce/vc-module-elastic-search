@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Nest;
 using VirtoCommerce.Domain.Search;
+using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Settings;
 using SearchRequest = VirtoCommerce.Domain.Search.SearchRequest;
 
@@ -472,6 +473,11 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 connectionSettings.BasicAuthentication("elastic", accessKey);
             }
 
+            if (GetEnableHttpCompression(connection).EqualsInvariant("true"))
+            {
+                connectionSettings.EnableHttpCompression();
+            }
+
             return connectionSettings;
         }
 
@@ -502,6 +508,11 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected static string GetAccessKey(ISearchConnection connection)
         {
             return connection?["AccessKey"] ?? connection?["key"];
+        }
+
+        protected static string GetEnableHttpCompression(ISearchConnection connection)
+        {
+            return connection?["EnableHttpCompression"] ?? connection?["compress"];
         }
     }
 }
