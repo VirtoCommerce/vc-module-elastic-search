@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using Nest;
 using Newtonsoft.Json.Linq;
@@ -25,18 +25,21 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var result = new SearchDocument { Id = hit.Id };
 
             // Copy fields and convert JArray to object[]
-            foreach (var kvp in hit.Source)
+            var fields = (IDictionary<string, object>)hit.Source ?? hit.Fields;
+            if (fields != null)
             {
-                var name = kvp.Key;
-                var value = kvp.Value;
-
-                var jArray = kvp.Value as JArray;
-                if (jArray != null)
+                foreach (var kvp in fields)
                 {
-                    value = jArray.ToObject<object[]>();
-                }
+                    var name = kvp.Key;
+                    var value = kvp.Value;
 
-                result.Add(name, value);
+                    if (value is JArray jArray)
+                    {
+                        value = jArray.ToObject<object[]>();
+                    }
+
+                    result.Add(name, value);
+                }
             }
 
             return result;
