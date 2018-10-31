@@ -25,7 +25,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var result = new SearchDocument { Id = hit.Id };
 
             // Copy fields and convert JArray to object[]
-            var fields = (IDictionary<string, object>)hit.Source ?? hit.Fields;
+            var fields = hit.Source ?? (IDictionary<string, object>)hit.Fields;
             if (fields != null)
             {
                 foreach (var kvp in fields)
