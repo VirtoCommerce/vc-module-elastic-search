@@ -154,7 +154,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var termValues = termFilter.Values;
 
             var field = availableFields.Where(kvp => kvp.Key.Name.EqualsInvariant(termFilter.FieldName)).Select(kvp => kvp.Value).FirstOrDefault();
-            if (field?.Type?.Name?.EqualsInvariant("boolean") == true)
+            if (field?.Type?.EqualsInvariant("boolean") == true)
             {
                 termValues = termValues.Select(v => v.ToLowerInvariant()).ToArray();
             }
@@ -310,10 +310,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
                 if (termAggregationRequest.Values?.Any() == true)
                 {
-                    termsAggregation.Include = new TermsIncludeExclude
-                    {
-                        Values = termAggregationRequest.Values
-                    };
+                    termsAggregation.Include = new TermsInclude(termAggregationRequest.Values);
                 }
             }
 

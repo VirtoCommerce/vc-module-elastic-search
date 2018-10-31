@@ -193,7 +193,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                         // Create new property mapping
                         var providerField = CreateProviderField(field, documentType);
                         ConfigureProperty(providerField, field, documentType);
-                        properties.Add(fieldName, providerField);
+                        properties[fieldName] = providerField;
                     }
 
                     var isCollection = field.IsCollection || field.Values.Count > 1;
@@ -306,7 +306,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 if (await IndexExistsAsync(indexName))
                 {
                     var providerMapping = await Client.GetMappingAsync(new GetMappingRequest(indexName, documentType));
-                    var mapping = providerMapping.Mapping;
+                    var mapping = providerMapping.Indices.FirstOrDefault().Value?.Mappings?.FirstOrDefault().Value;
                     if (mapping != null)
                     {
                         properties = new Properties<IProperties>(mapping.Properties);
