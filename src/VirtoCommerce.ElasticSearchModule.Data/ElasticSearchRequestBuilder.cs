@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Nest;
-using VirtoCommerce.Domain.Search;
 using VirtoCommerce.Platform.Core.Common;
-using SearchRequest = VirtoCommerce.Domain.Search.SearchRequest;
+using VirtoCommerce.SearchModule.Core.Model;
+using SearchRequest = VirtoCommerce.SearchModule.Core.Model.SearchRequest;
 
 namespace VirtoCommerce.ElasticSearchModule.Data
 {
@@ -18,12 +18,11 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 Aggregations = GetAggregations(request, availableFields),
                 Sort = GetSorting(request?.Sorting),
                 From = request?.Skip,
-                Size = request?.Take,
+                Size = request?.Take
             };
 
             return result;
         }
-
 
         protected virtual QueryContainer GetQuery(SearchRequest request)
         {
@@ -39,7 +38,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     Fields = fields,
                     Query = keywords,
                     Analyzer = "standard",
-                    Operator = Operator.And,
+                    Operator = Operator.And
                 };
 
                 if (request.IsFuzzySearch)
@@ -63,9 +62,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         {
             ISort result;
 
-            var geoSorting = field as GeoDistanceSortingField;
-
-            if (geoSorting != null)
+            if (field is GeoDistanceSortingField geoSorting)
             {
                 result = new GeoDistanceSort
                 {
@@ -80,7 +77,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 {
                     Field = ElasticSearchHelper.ToElasticFieldName(field.FieldName),
                     Order = field.IsDescending ? SortOrder.Descending : SortOrder.Ascending,
-                    Missing = "_last",
+                    MissingValue = "_last",
                     UnmappedType = FieldType.Long,
                 };
             }
@@ -97,41 +94,29 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         {
             QueryContainer result = null;
 
-            var idsFilter = filter as IdsFilter;
-            var termFilter = filter as TermFilter;
-            var rangeFilter = filter as RangeFilter;
-            var geoDistanceFilter = filter as GeoDistanceFilter;
-            var notFilter = filter as NotFilter;
-            var andFilter = filter as AndFilter;
-            var orFilter = filter as OrFilter;
-
-            if (idsFilter != null)
+            switch (filter)
             {
-                result = CreateIdsFilter(idsFilter);
-            }
-            else if (termFilter != null)
-            {
-                result = CreateTermFilter(termFilter, availableFields);
-            }
-            else if (rangeFilter != null)
-            {
-                result = CreateRangeFilter(rangeFilter);
-            }
-            else if (geoDistanceFilter != null)
-            {
-                result = CreateGeoDistanceFilter(geoDistanceFilter);
-            }
-            else if (notFilter != null)
-            {
-                result = CreateNotFilter(notFilter, availableFields);
-            }
-            else if (andFilter != null)
-            {
-                result = CreateAndFilter(andFilter, availableFields);
-            }
-            else if (orFilter != null)
-            {
-                result = CreateOrFilter(orFilter, availableFields);
+                case IdsFilter idsFilter:
+                    result = CreateIdsFilter(idsFilter);
+                    break;
+                case TermFilter termFilter:
+                    result = CreateTermFilter(termFilter, availableFields);
+                    break;
+                case RangeFilter rangeFilter:
+                    result = CreateRangeFilter(rangeFilter);
+                    break;
+                case GeoDistanceFilter geoDistanceFilter:
+                    result = CreateGeoDistanceFilter(geoDistanceFilter);
+                    break;
+                case NotFilter notFilter:
+                    result = CreateNotFilter(notFilter, availableFields);
+                    break;
+                case AndFilter andFilter:
+                    result = CreateAndFilter(andFilter, availableFields);
+                    break;
+                case OrFilter orFilter:
+                    result = CreateOrFilter(orFilter, availableFields);
+                    break;
             }
 
             return result;
@@ -231,7 +216,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
-
         protected virtual TermRangeQuery CreateTermRangeQuery(string fieldName, RangeFilterValue value)
         {
             var lower = string.IsNullOrEmpty(value.Lower) ? null : value.Lower;
@@ -263,7 +247,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             return termRangeQuery;
         }
-
 
         protected virtual AggregationDictionary GetAggregations(SearchRequest request, Properties<IProperties> availableFields)
         {

@@ -2,13 +2,14 @@ using System.Collections.Generic;
 using System.Linq;
 using Nest;
 using Newtonsoft.Json.Linq;
-using VirtoCommerce.Domain.Search;
+using VirtoCommerce.SearchModule.Core.Model;
+using SearchRequest = VirtoCommerce.SearchModule.Core.Model.SearchRequest;
 
 namespace VirtoCommerce.ElasticSearchModule.Data
 {
     public static class ElasticSearchResponseBuilder
     {
-        public static SearchResponse ToSearchResponse(this ISearchResponse<SearchDocument> response, Domain.Search.SearchRequest request, string documentType)
+        public static SearchResponse ToSearchResponse(this ISearchResponse<SearchDocument> response, SearchRequest request, string documentType)
         {
             var result = new SearchResponse
             {
@@ -45,7 +46,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
-        private static IList<AggregationResponse> GetAggregations(IReadOnlyDictionary<string, IAggregate> searchResponseAggregations, Domain.Search.SearchRequest request)
+        private static IList<AggregationResponse> GetAggregations(IReadOnlyDictionary<string, IAggregate> searchResponseAggregations, SearchRequest request)
         {
             var result = new List<AggregationResponse>();
 
@@ -56,7 +57,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     var aggregation = new AggregationResponse
                     {
                         Id = aggregationRequest.Id ?? aggregationRequest.FieldName,
-                        Values = new List<AggregationResponseValue>(),
+                        Values = new List<AggregationResponseValue>()
                     };
 
                     var termAggregationRequest = aggregationRequest as TermAggregationRequest;

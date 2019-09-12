@@ -1,13 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26430.12
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29123.88
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VirtoCommerce.ElasticSearchModule.Web", "VirtoCommerce.ElasticSearchModule.Web\VirtoCommerce.ElasticSearchModule.Web.csproj", "{FA89F201-8438-4C3E-B81B-E0715109377E}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{9DF5FAE1-B54F-4947-A565-826E9B9DD697}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VirtoCommerce.ElasticSearchModule.Data", "VirtoCommerce.ElasticSearchModule.Data\VirtoCommerce.ElasticSearchModule.Data.csproj", "{AEF70947-E8AB-4A73-BFCD-A5286BAD7EDC}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{6DD68D74-51C8-4F4A-9895-713D58131753}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VirtoCommerce.ElasticSearchModule.Tests", "VirtoCommerce.ElasticSearchModule.Tests\VirtoCommerce.ElasticSearchModule.Tests.csproj", "{9DBB10FD-642F-4EA1-A90C-17C2A52B5B7D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VirtoCommerce.ElasticSearchModule.Data", "src\VirtoCommerce.ElasticSearchModule.Data\VirtoCommerce.ElasticSearchModule.Data.csproj", "{6CEADC5E-F117-4E26-8023-D4C845C14295}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VirtoCommerce.ElasticSearchModule.Web", "src\VirtoCommerce.ElasticSearchModule.Web\VirtoCommerce.ElasticSearchModule.Web.csproj", "{C43100C0-E967-47E1-82B0-2304AB5493C0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VirtoCommerce.ElasticSearchModule.Tests", "tests\VirtoCommerce.ElasticSearchModule.Tests\VirtoCommerce.ElasticSearchModule.Tests.csproj", "{5E9A84DF-97B7-4A9C-88E0-782094AD72E6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,20 +19,28 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{FA89F201-8438-4C3E-B81B-E0715109377E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FA89F201-8438-4C3E-B81B-E0715109377E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FA89F201-8438-4C3E-B81B-E0715109377E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FA89F201-8438-4C3E-B81B-E0715109377E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AEF70947-E8AB-4A73-BFCD-A5286BAD7EDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AEF70947-E8AB-4A73-BFCD-A5286BAD7EDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AEF70947-E8AB-4A73-BFCD-A5286BAD7EDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AEF70947-E8AB-4A73-BFCD-A5286BAD7EDC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9DBB10FD-642F-4EA1-A90C-17C2A52B5B7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9DBB10FD-642F-4EA1-A90C-17C2A52B5B7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9DBB10FD-642F-4EA1-A90C-17C2A52B5B7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9DBB10FD-642F-4EA1-A90C-17C2A52B5B7D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6CEADC5E-F117-4E26-8023-D4C845C14295}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CEADC5E-F117-4E26-8023-D4C845C14295}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CEADC5E-F117-4E26-8023-D4C845C14295}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CEADC5E-F117-4E26-8023-D4C845C14295}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C43100C0-E967-47E1-82B0-2304AB5493C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C43100C0-E967-47E1-82B0-2304AB5493C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C43100C0-E967-47E1-82B0-2304AB5493C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C43100C0-E967-47E1-82B0-2304AB5493C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5E9A84DF-97B7-4A9C-88E0-782094AD72E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E9A84DF-97B7-4A9C-88E0-782094AD72E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E9A84DF-97B7-4A9C-88E0-782094AD72E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E9A84DF-97B7-4A9C-88E0-782094AD72E6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{6CEADC5E-F117-4E26-8023-D4C845C14295} = {9DF5FAE1-B54F-4947-A565-826E9B9DD697}
+		{C43100C0-E967-47E1-82B0-2304AB5493C0} = {9DF5FAE1-B54F-4947-A565-826E9B9DD697}
+		{5E9A84DF-97B7-4A9C-88E0-782094AD72E6} = {6DD68D74-51C8-4F4A-9895-713D58131753}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FD0D7E52-58BA-43AA-9C0C-ECAC275B24E5}
 	EndGlobalSection
 EndGlobal

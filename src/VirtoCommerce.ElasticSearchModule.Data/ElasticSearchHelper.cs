@@ -1,6 +1,6 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Nest;
-using VirtoCommerce.Domain.Search;
+using VirtoCommerce.SearchModule.Core.Model;
 
 namespace VirtoCommerce.ElasticSearchModule.Data
 {

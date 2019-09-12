@@ -2,11 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 using Nest;
-using VirtoCommerce.Domain.Search;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Settings;
-using SearchRequest = VirtoCommerce.Domain.Search.SearchRequest;
+using VirtoCommerce.SearchModule.Core.Exceptions;
+using VirtoCommerce.SearchModule.Core.Model;
+using VirtoCommerce.SearchModule.Core.Services;
+using SearchRequest = VirtoCommerce.SearchModule.Core.Model.SearchRequest;
 
 namespace VirtoCommerce.ElasticSearchModule.Data
 {
@@ -18,36 +21,51 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         private readonly ISettingsManager _settingsManager;
         private readonly Dictionary<string, Properties<IProperties>> _mappings = new Dictionary<string, Properties<IProperties>>();
+        private readonly SearchOptions _searchOptions;
+        private readonly ElasticSearchOptions _elasticSearchOptions;
 
-        public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager)
-            : this(connection, settingsManager, new ElasticClient(GetConnectionSettings(connection)))
+        public ElasticSearchProvider(
+            IOptions<ElasticSearchOptions> elasticSearchOptions,
+            IOptions<SearchOptions> searchOptions,
+            ISettingsManager settingsManager)
+            : this(elasticSearchOptions, searchOptions, settingsManager, new ElasticClient(GetConnectionSettings(elasticSearchOptions.Value)))
         {
         }
 
-        public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager, IElasticClient client)
-            : this(connection, settingsManager, client, new ElasticSearchRequestBuilder())
+        public ElasticSearchProvider(IOptions<ElasticSearchOptions> elasticSearchOptions,
+            IOptions<SearchOptions> searchOptions, ISettingsManager settingsManager, IElasticClient client)
+            : this(elasticSearchOptions, searchOptions, settingsManager, client, new ElasticSearchRequestBuilder())
         {
         }
 
-        public ElasticSearchProvider(ISearchConnection connection, ISettingsManager settingsManager, IElasticClient client, ElasticSearchRequestBuilder requestBuilder)
+        public ElasticSearchProvider(
+            IOptions<ElasticSearchOptions> elasticSearchOptions, IOptions<SearchOptions> searchOptions,
+            ISettingsManager settingsManager, IElasticClient client, ElasticSearchRequestBuilder requestBuilder)
         {
+            if (searchOptions == null)
+                throw new ArgumentNullException(nameof(searchOptions));
+
+            if (elasticSearchOptions == null)
+                throw new ArgumentNullException(nameof(elasticSearchOptions));
+
             _settingsManager = settingsManager;
             Client = client;
             RequestBuilder = requestBuilder;
-            Scope = connection.Scope;
             ServerUrl = client.ConnectionSettings.ConnectionPool.Nodes.First().Uri;
+            _elasticSearchOptions = elasticSearchOptions.Value;
+            _searchOptions = searchOptions.Value;
         }
 
         protected IElasticClient Client { get; }
         protected ElasticSearchRequestBuilder RequestBuilder { get; }
-        protected string Scope { get; }
         protected Uri ServerUrl { get; }
-
 
         public virtual async Task DeleteIndexAsync(string documentType)
         {
             if (string.IsNullOrEmpty(documentType))
+            {
                 throw new ArgumentNullException(nameof(documentType));
+            }
 
             try
             {
@@ -70,12 +88,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         public virtual async Task<IndexingResult> IndexAsync(string documentType, IList<IndexDocument> documents)
         {
             var indexName = GetIndexName(documentType);
-
             var providerFields = await GetMappingAsync(indexName, documentType);
             var oldFieldsCount = providerFields.Count();
-
             var providerDocuments = documents.Select(document => ConvertToProviderDocument(document, providerFields, documentType)).ToList();
-
             var updateMapping = providerFields.Count() != oldFieldsCount;
             var indexExits = await IndexExistsAsync(indexName);
 
@@ -101,8 +116,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 {
                     Id = i.Id,
                     Succeeded = i.IsValid,
-                    ErrorMessage = i.Error?.Reason,
-                }).ToArray(),
+                    ErrorMessage = i.Error?.Reason
+                }).ToArray()
             };
 
             return result;
@@ -111,7 +126,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         public virtual async Task<IndexingResult> RemoveAsync(string documentType, IList<IndexDocument> documents)
         {
             var providerDocuments = documents.Select(d => new SearchDocument { Id = d.Id }).ToArray();
-
             var indexName = GetIndexName(documentType);
             var bulkDefinition = new BulkDescriptor();
             bulkDefinition.DeleteMany(providerDocuments).Index(indexName).Type(documentType);
@@ -125,8 +139,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 {
                     Id = i.Id,
                     Succeeded = i.IsValid,
-                    ErrorMessage = i.Error?.Reason,
-                }).ToArray(),
+                    ErrorMessage = i.Error?.Reason
+                }).ToArray()
             };
 
             return result;
@@ -135,7 +149,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         public virtual async Task<SearchResponse> SearchAsync(string documentType, SearchRequest request)
         {
             var indexName = GetIndexName(documentType);
-
             ISearchResponse<SearchDocument> providerResponse;
 
             try
@@ -158,7 +171,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
-
         protected virtual SearchDocument ConvertToProviderDocument(IndexDocument document, Properties<IProperties> properties, string documentType)
         {
             var result = new SearchDocument { Id = document.Id };
@@ -170,11 +182,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 if (result.ContainsKey(fieldName))
                 {
                     var newValues = new List<object>();
-
                     var currentValue = result[fieldName];
-                    var currentValues = currentValue as object[];
 
-                    if (currentValues != null)
+                    if (currentValue is object[] currentValues)
                     {
                         newValues.AddRange(currentValues);
                     }
@@ -188,8 +198,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 }
                 else
                 {
-                    var dictionary = properties as IDictionary<PropertyName, IProperty>;
-                    if (dictionary != null && !dictionary.ContainsKey(fieldName))
+                    if (properties is IDictionary<PropertyName, IProperty> dictionary
+                        && !dictionary.ContainsKey(fieldName))
                     {
                         // Create new property mapping
                         var providerField = CreateProviderField(field, documentType);
@@ -262,22 +272,19 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         {
             if (property != null)
             {
-                var baseProperty = property as CorePropertyBase;
-                if (baseProperty != null)
+                if (property is CorePropertyBase baseProperty)
                 {
                     baseProperty.Store = field.IsRetrievable;
                 }
 
-                var textProperty = property as TextProperty;
-                if (textProperty != null)
+                switch (property)
                 {
-                    ConfigureTextProperty(textProperty, field, documentType);
-                }
-
-                var keywordProperty = property as KeywordProperty;
-                if (keywordProperty != null)
-                {
-                    ConfigureKeywordProperty(keywordProperty, field, documentType);
+                    case TextProperty textProperty:
+                        ConfigureTextProperty(textProperty, field, documentType);
+                        break;
+                    case KeywordProperty keywordProperty:
+                        ConfigureKeywordProperty(keywordProperty, field, documentType);
+                        break;
                 }
             }
         }
@@ -302,22 +309,18 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected virtual async Task<Properties<IProperties>> GetMappingAsync(string indexName, string documentType)
         {
             var properties = GetMappingFromCache(indexName);
-            if (properties == null)
+            if (properties == null && await IndexExistsAsync(indexName))
             {
-                if (await IndexExistsAsync(indexName))
+                var providerMapping = await Client.GetMappingAsync(new GetMappingRequest(indexName, documentType));
+                var mapping = providerMapping.Mapping;
+                if (mapping != null)
                 {
-                    var providerMapping = await Client.GetMappingAsync(new GetMappingRequest(indexName, documentType));
-                    var mapping = providerMapping.Mapping;
-                    if (mapping != null)
-                    {
-                        properties = new Properties<IProperties>(mapping.Properties);
-                    }
+                    properties = new Properties<IProperties>(mapping.Properties);
                 }
             }
 
             properties = properties ?? new Properties<IProperties>();
             AddMappingToCache(indexName, properties);
-
             return properties;
         }
 
@@ -332,7 +335,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
 
             AddMappingToCache(indexName, properties);
-
             await Client.RefreshAsync(indexName);
         }
 
@@ -361,16 +363,15 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return key.Split('/');
         }
 
-
         protected virtual void ThrowException(string message, Exception innerException)
         {
-            throw new SearchException($"{message}. URL:{ServerUrl}, Scope: {Scope}", innerException);
+            throw new SearchException($"{message}. URL:{ServerUrl}, Scope: {_searchOptions.Scope}", innerException);
         }
 
         protected virtual string GetIndexName(string documentType)
         {
             // Use different index for each document type
-            return string.Join("-", Scope, documentType).ToLowerInvariant();
+            return string.Join("-", _searchOptions.Scope, documentType).ToLowerInvariant();
         }
 
         protected virtual async Task<bool> IndexExistsAsync(string indexName)
@@ -417,8 +418,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         {
             return tokenFilters
                 .NGram(NGramFilterName, descriptor => ConfigureNGramFilter(descriptor, documentType))
-                .EdgeNGram(EdgeNGramFilterName, descriptor => ConfigureEdgeNGramFilter(descriptor, documentType))
-                ;
+                .EdgeNGram(EdgeNGramFilterName, descriptor => ConfigureEdgeNGramFilter(descriptor, documentType));
         }
 
         protected virtual NGramTokenFilterDescriptor ConfigureNGramFilter(NGramTokenFilterDescriptor nGram, string documentType)
@@ -433,34 +433,32 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         protected virtual int GetFieldsLimit()
         {
-            var fieldsLimit = _settingsManager.GetValue("VirtoCommerce.Search.Elasticsearch.IndexTotalFieldsLimit", 1000);
+            var fieldsLimit = _settingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.IndexTotalFieldsLimit", 1000);
             return fieldsLimit;
         }
 
         protected virtual string GetTokenFilterName()
         {
-            return _settingsManager.GetValue("VirtoCommerce.Search.Elasticsearch.TokenFilter", EdgeNGramFilterName);
+            return _settingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.TokenFilter", EdgeNGramFilterName);
         }
 
         protected virtual int GetMinGram()
         {
-            return _settingsManager.GetValue("VirtoCommerce.Search.Elasticsearch.NGramTokenFilter.MinGram", 1);
+            return _settingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.NGramTokenFilter.MinGram", 1);
         }
 
         protected virtual int GetMaxGram()
         {
-            return _settingsManager.GetValue("VirtoCommerce.Search.Elasticsearch.NGramTokenFilter.MaxGram", 20);
+            return _settingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.NGramTokenFilter.MaxGram", 20);
         }
 
         #endregion
 
-
-        protected static IConnectionSettingsValues GetConnectionSettings(ISearchConnection connection)
+        protected static IConnectionSettingsValues GetConnectionSettings(ElasticSearchOptions options)
         {
-            var serverUrl = GetServerUrl(connection);
-            var accessUser = GetAccessUser(connection);
-            var accessKey = GetAccessKey(connection);
-
+            var serverUrl = GetServerUrl(options);
+            var accessUser = options.User;
+            var accessKey = options.Key;
             var connectionSettings = new ConnectionSettings(serverUrl);
 
             if (!string.IsNullOrEmpty(accessUser) && !string.IsNullOrEmpty(accessKey))
@@ -473,7 +471,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 connectionSettings.BasicAuthentication("elastic", accessKey);
             }
 
-            if (GetEnableHttpCompression(connection).EqualsInvariant("true"))
+            if (options.EnableHttpCompression.EqualsInvariant("true"))
             {
                 connectionSettings.EnableHttpCompression();
             }
@@ -481,13 +479,13 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return connectionSettings;
         }
 
-        protected static Uri GetServerUrl(ISearchConnection connection)
+        protected static Uri GetServerUrl(ElasticSearchOptions options)
         {
-            var server = connection?["server"];
+            var server = options.Server;
 
             if (string.IsNullOrEmpty(server))
             {
-                throw new ArgumentException("'server' parameter must not be empty");
+                throw new ArgumentException("'Server' parameter must not be empty");
             }
 
             if (!server.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
@@ -498,21 +496,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             server = server.TrimEnd('/');
             return new Uri(server);
-        }
-
-        protected static string GetAccessUser(ISearchConnection connection)
-        {
-            return connection?["AccessUser"] ?? connection?["user"];
-        }
-
-        protected static string GetAccessKey(ISearchConnection connection)
-        {
-            return connection?["AccessKey"] ?? connection?["key"];
-        }
-
-        protected static string GetEnableHttpCompression(ISearchConnection connection)
-        {
-            return connection?["EnableHttpCompression"] ?? connection?["compress"];
         }
     }
 }
