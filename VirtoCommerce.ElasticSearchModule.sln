@@ -13,12 +13,16 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VirtoCommerce.ElasticSearch
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VirtoCommerce.ElasticSearchModule.Tests", "tests\VirtoCommerce.ElasticSearchModule.Tests\VirtoCommerce.ElasticSearchModule.Tests.csproj", "{5E9A84DF-97B7-4A9C-88E0-782094AD72E6}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_build", "build\_build.csproj", "{405484D7-59EE-490D-81B9-A566A1205BF0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{405484D7-59EE-490D-81B9-A566A1205BF0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{405484D7-59EE-490D-81B9-A566A1205BF0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6CEADC5E-F117-4E26-8023-D4C845C14295}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6CEADC5E-F117-4E26-8023-D4C845C14295}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6CEADC5E-F117-4E26-8023-D4C845C14295}.Release|Any CPU.ActiveCfg = Release|Any CPU
