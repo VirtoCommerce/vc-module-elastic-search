@@ -19,7 +19,7 @@
     <projectUrl>https://github.com/VirtoCommerce/vc-module-elastic-search</projectUrl>
     <iconUrl>https://github.com/VirtoCommerce/vc-module-elastic-search/raw/master/VirtoCommerce.ElasticSearchModule.Web/Content/logo.png</iconUrl>
     <releaseNotes>Third version.</releaseNotes>
-    <copyright>Copyright © 2018 Virto Commerce. All rights reserved</copyright>
+    <copyright>Copyright © 2019 Virto Commerce. All rights reserved</copyright>
     <tags>elastic search</tags>
 
     <assemblyFile>VirtoCommerce.ElasticSearchModule.Web.dll</assemblyFile>
