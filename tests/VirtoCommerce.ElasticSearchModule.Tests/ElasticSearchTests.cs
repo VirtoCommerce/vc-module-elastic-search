@@ -8,6 +8,7 @@ using Xunit;
 namespace VirtoCommerce.ElasticSearchModule.Tests
 {
     [Trait("Category", "CI")]
+    [Trait("Category", "IntegrationTest")]
     public class ElasticSearchTests : SearchProviderTests
     {
         protected override ISearchProvider GetSearchProvider()
