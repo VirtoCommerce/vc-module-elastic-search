@@ -16,6 +16,9 @@
     <owners>
         <owner>Virto Commerce</owner>
     </owners>
+	<groups>
+        <group>commerce</group>
+    </groups>
     <projectUrl>https://github.com/VirtoCommerce/vc-module-elastic-search</projectUrl>
     <iconUrl>https://github.com/VirtoCommerce/vc-module-elastic-search/raw/master/VirtoCommerce.ElasticSearchModule.Web/Content/logo.png</iconUrl>
     <releaseNotes>Third version.</releaseNotes>
