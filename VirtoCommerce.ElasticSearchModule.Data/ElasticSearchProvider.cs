@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Elasticsearch.Net;
 using Nest;
+using Nest.JsonNetSerializer;
 using VirtoCommerce.Domain.Search;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Settings;
@@ -307,7 +309,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 if (await IndexExistsAsync(indexName))
                 {
                     var providerMapping = await Client.GetMappingAsync(new GetMappingRequest(indexName, documentType));
-                    var mapping = providerMapping.Mapping;
+                    var mapping = providerMapping.GetMappingFor(indexName);
                     if (mapping != null)
                     {
                         properties = new Properties<IProperties>(mapping.Properties);
@@ -461,7 +463,10 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var accessUser = GetAccessUser(connection);
             var accessKey = GetAccessKey(connection);
 
-            var connectionSettings = new ConnectionSettings(serverUrl);
+            var pool = new SingleNodeConnectionPool(serverUrl);
+            var connectionSettings = new ConnectionSettings(pool, sourceSerializer: JsonNetSerializer.Default);
+
+            connectionSettings.DisableDirectStreaming(true);
 
             if (!string.IsNullOrEmpty(accessUser) && !string.IsNullOrEmpty(accessKey))
             {
