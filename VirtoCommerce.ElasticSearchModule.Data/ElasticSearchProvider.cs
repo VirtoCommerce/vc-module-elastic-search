@@ -466,8 +466,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var pool = new SingleNodeConnectionPool(serverUrl);
             var connectionSettings = new ConnectionSettings(pool, sourceSerializer: JsonNetSerializer.Default);
 
-            connectionSettings.DisableDirectStreaming(true);
-
             if (!string.IsNullOrEmpty(accessUser) && !string.IsNullOrEmpty(accessKey))
             {
                 connectionSettings.BasicAuthentication(accessUser, accessKey);

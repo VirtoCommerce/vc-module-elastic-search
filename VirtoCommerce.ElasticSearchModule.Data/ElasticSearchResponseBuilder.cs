@@ -3,6 +3,7 @@ using System.Linq;
 using Nest;
 using Newtonsoft.Json.Linq;
 using VirtoCommerce.Domain.Search;
+using VirtoCommerce.Platform.Core.Common;
 
 namespace VirtoCommerce.ElasticSearchModule.Data
 {
@@ -25,7 +26,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var result = new SearchDocument { Id = hit.Id };
 
             // Copy fields and convert JArray to object[]
-            var fields = (IDictionary<string, object>)hit.Source ?? hit.Fields;
+            var fields = (IDictionary<string, object>)hit.Source ?? (IDictionary<string, object>)hit.Fields;
+
             if (fields != null)
             {
                 foreach (var kvp in fields)
@@ -96,9 +98,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
                 if (singleBucketAggregate != null)
                 {
-                    if (singleBucketAggregate.Aggregations != null)
+                    if (singleBucketAggregate.Keys.Any(x => x.EqualsInvariant(responseKey)))
                     {
-                        bucketAggregate = singleBucketAggregate.Aggregations[responseKey] as BucketAggregate;
+                        bucketAggregate = singleBucketAggregate[responseKey] as BucketAggregate;
                     }
                     else if (singleBucketAggregate.DocCount > 0)
                     {
