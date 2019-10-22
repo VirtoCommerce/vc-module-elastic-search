@@ -9,9 +9,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 {
     public class ElasticSearchRequestBuilder
     {
-        public virtual ISearchRequest BuildRequest(SearchRequest request, string indexName, string documentType, Properties<IProperties> availableFields)
+        public virtual ISearchRequest BuildRequest(SearchRequest request, string indexName, Properties<IProperties> availableFields)
         {
-            var result = new Nest.SearchRequest(indexName, documentType)
+            var result = new Nest.SearchRequest(indexName)
             {
                 Query = GetQuery(request),
                 PostFilter = GetFilters(request, availableFields),
@@ -76,7 +76,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
             else
             {
-                result = new SortField
+                result = new FieldSort
                 {
                     Field = ElasticSearchHelper.ToElasticFieldName(field.FieldName),
                     Order = field.IsDescending ? SortOrder.Descending : SortOrder.Ascending,

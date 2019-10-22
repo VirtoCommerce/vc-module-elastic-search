@@ -9,7 +9,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 {
     public static class ElasticSearchResponseBuilder
     {
-        public static SearchResponse ToSearchResponse(this ISearchResponse<SearchDocument> response, Domain.Search.SearchRequest request, string documentType)
+        public static SearchResponse ToSearchResponse(this ISearchResponse<SearchDocument> response, Domain.Search.SearchRequest request)
         {
             var result = new SearchResponse
             {

@@ -55,7 +55,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             {
                 var indexName = GetIndexName(documentType);
 
-                var response = await Client.DeleteIndexAsync(indexName);
+                var response = await Client.Indices.DeleteAsync(indexName);
                 if (!response.IsValid && response.ApiCall.HttpStatusCode != 404)
                 {
                     throw new SearchException(response.DebugInformation);
@@ -73,29 +73,29 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         {
             var indexName = GetIndexName(documentType);
 
-            var providerFields = await GetMappingAsync(indexName, documentType);
+            var providerFields = await GetMappingAsync(indexName);
             var oldFieldsCount = providerFields.Count();
 
-            var providerDocuments = documents.Select(document => ConvertToProviderDocument(document, providerFields, documentType)).ToList();
+            var providerDocuments = documents.Select(document => ConvertToProviderDocument(document, providerFields)).ToList();
 
             var updateMapping = providerFields.Count() != oldFieldsCount;
             var indexExits = await IndexExistsAsync(indexName);
 
             if (!indexExits)
             {
-                await CreateIndexAsync(indexName, documentType);
+                await CreateIndexAsync(indexName);
             }
 
             if (!indexExits || updateMapping)
             {
-                await UpdateMappingAsync(indexName, documentType, providerFields);
+                await UpdateMappingAsync(indexName, providerFields);
             }
 
             var bulkDefinition = new BulkDescriptor();
-            bulkDefinition.IndexMany(providerDocuments).Index(indexName).Type(documentType);
+            bulkDefinition.IndexMany(providerDocuments).Index(indexName);
 
             var bulkResponse = await Client.BulkAsync(bulkDefinition);
-            await Client.RefreshAsync(indexName);
+            await Client.Indices.RefreshAsync(indexName);
 
             var result = new IndexingResult
             {
@@ -116,10 +116,10 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             var indexName = GetIndexName(documentType);
             var bulkDefinition = new BulkDescriptor();
-            bulkDefinition.DeleteMany(providerDocuments).Index(indexName).Type(documentType);
+            bulkDefinition.DeleteMany(providerDocuments).Index(indexName);
 
             var bulkResponse = await Client.BulkAsync(bulkDefinition);
-            await Client.RefreshAsync(indexName);
+            await Client.Indices.RefreshAsync(indexName);
 
             var result = new IndexingResult
             {
@@ -142,8 +142,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             try
             {
-                var availableFields = await GetMappingAsync(indexName, documentType);
-                var providerRequest = RequestBuilder.BuildRequest(request, indexName, documentType, availableFields);
+                var availableFields = await GetMappingAsync(indexName);
+                var providerRequest = RequestBuilder.BuildRequest(request, indexName, availableFields);
                 providerResponse = await Client.SearchAsync<SearchDocument>(providerRequest);
             }
             catch (Exception ex)
@@ -156,12 +156,12 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 ThrowException(providerResponse.DebugInformation, null);
             }
 
-            var result = providerResponse.ToSearchResponse(request, documentType);
+            var result = providerResponse.ToSearchResponse(request);
             return result;
         }
 
 
-        protected virtual SearchDocument ConvertToProviderDocument(IndexDocument document, Properties<IProperties> properties, string documentType)
+        protected virtual SearchDocument ConvertToProviderDocument(IndexDocument document, Properties<IProperties> properties)
         {
             var result = new SearchDocument { Id = document.Id };
 
@@ -194,8 +194,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     if (dictionary != null && !dictionary.ContainsKey(fieldName))
                     {
                         // Create new property mapping
-                        var providerField = CreateProviderField(field, documentType);
-                        ConfigureProperty(providerField, field, documentType);
+                        var providerField = CreateProviderField(field);
+                        ConfigureProperty(providerField, field);
                         properties.Add(fieldName, providerField);
                     }
 
@@ -213,7 +213,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
-        protected virtual IProperty CreateProviderField(IndexDocumentField field, string documentType)
+        protected virtual IProperty CreateProviderField(IndexDocumentField field)
         {
             var fieldType = field.Value?.GetType() ?? typeof(object);
 
@@ -260,7 +260,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             throw new ArgumentException($"Field {field.Name} has unsupported type {fieldType}", nameof(field));
         }
 
-        protected virtual void ConfigureProperty(IProperty property, IndexDocumentField field, string documentType)
+        protected virtual void ConfigureProperty(IProperty property, IndexDocumentField field)
         {
             if (property != null)
             {
@@ -273,18 +273,18 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 var textProperty = property as TextProperty;
                 if (textProperty != null)
                 {
-                    ConfigureTextProperty(textProperty, field, documentType);
+                    ConfigureTextProperty(textProperty, field);
                 }
 
                 var keywordProperty = property as KeywordProperty;
                 if (keywordProperty != null)
                 {
-                    ConfigureKeywordProperty(keywordProperty, field, documentType);
+                    ConfigureKeywordProperty(keywordProperty, field);
                 }
             }
         }
 
-        protected virtual void ConfigureKeywordProperty(KeywordProperty keywordProperty, IndexDocumentField field, string documentType)
+        protected virtual void ConfigureKeywordProperty(KeywordProperty keywordProperty, IndexDocumentField field)
         {
             if (keywordProperty != null)
             {
@@ -292,7 +292,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
         }
 
-        protected virtual void ConfigureTextProperty(TextProperty textProperty, IndexDocumentField field, string documentType)
+        protected virtual void ConfigureTextProperty(TextProperty textProperty, IndexDocumentField field)
         {
             if (textProperty != null)
             {
@@ -301,14 +301,14 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
         }
 
-        protected virtual async Task<Properties<IProperties>> GetMappingAsync(string indexName, string documentType)
+        protected virtual async Task<Properties<IProperties>> GetMappingAsync(string indexName)
         {
             var properties = GetMappingFromCache(indexName);
             if (properties == null)
             {
                 if (await IndexExistsAsync(indexName))
                 {
-                    var providerMapping = await Client.GetMappingAsync(new GetMappingRequest(indexName, documentType));
+                    var providerMapping = await Client.Indices.GetMappingAsync(new GetMappingRequest(indexName));
                     var mapping = providerMapping.GetMappingFor(indexName);
                     if (mapping != null)
                     {
@@ -323,9 +323,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return properties;
         }
 
-        protected virtual async Task UpdateMappingAsync(string indexName, string documentType, Properties<IProperties> properties)
+        protected virtual async Task UpdateMappingAsync(string indexName, Properties<IProperties> properties)
         {
-            var mappingRequest = new PutMappingRequest(indexName, documentType) { Properties = properties };
+            var mappingRequest = new PutMappingRequest(indexName) { Properties = properties };
             var response = await Client.MapAsync(mappingRequest);
 
             if (!response.IsValid)
@@ -335,7 +335,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             AddMappingToCache(indexName, properties);
 
-            await Client.RefreshAsync(indexName);
+            await Client.Indices.RefreshAsync(indexName);
         }
 
         protected virtual Properties<IProperties> GetMappingFromCache(string indexName)
@@ -377,58 +377,66 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         protected virtual async Task<bool> IndexExistsAsync(string indexName)
         {
-            var response = await Client.IndexExistsAsync(indexName);
+            var response = await Client.Indices.ExistsAsync(indexName);
             return response.Exists;
         }
 
         #region Create and configure index
 
-        protected virtual async Task CreateIndexAsync(string indexName, string documentType)
+        protected virtual async Task CreateIndexAsync(string indexName)
         {
-            await Client.CreateIndexAsync(indexName, i => i.Settings(s => ConfigureIndexSettings(s, documentType)));
+            var response = await Client.Indices.CreateAsync(indexName, i => i.Settings(ConfigureIndexSettings));
+
+            if (!response.IsValid)
+            {
+                ThrowException("Failed to create index. " + response.DebugInformation, response.OriginalException);
+            }
         }
 
-        protected virtual IndexSettingsDescriptor ConfigureIndexSettings(IndexSettingsDescriptor settings, string documentType)
+        protected virtual IndexSettingsDescriptor ConfigureIndexSettings(IndexSettingsDescriptor settings)
         {
             // https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html#mapping-limit-settings
             var fieldsLimit = GetFieldsLimit();
 
+            //new v7.3 index setting "max_ngram_diff"
+            //https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index.max_ngram_diff
+            var ngramDiff = GetMaxGram() - GetMinGram();
+
             return settings
                 .Setting("index.mapping.total_fields.limit", fieldsLimit)
+                .Setting("index.max_ngram_diff", ngramDiff)
                 .Analysis(a => a
-                    .TokenFilters(tokenFilters => ConfigureTokenFilters(tokenFilters, documentType))
-                    .Analyzers(analyzers => ConfigureAnalyzers(analyzers, documentType)));
+                    .TokenFilters(ConfigureTokenFilters)
+                    .Analyzers(ConfigureAnalyzers));
         }
 
-        protected virtual AnalyzersDescriptor ConfigureAnalyzers(AnalyzersDescriptor analyzers, string documentType)
+        protected virtual AnalyzersDescriptor ConfigureAnalyzers(AnalyzersDescriptor analyzers)
         {
             return analyzers
-                .Custom(SearchableFieldAnalyzerName, customAnalyzer => ConfigureSearchableFieldAnalyzer(customAnalyzer, documentType));
+                .Custom(SearchableFieldAnalyzerName, customAnalyzer => ConfigureSearchableFieldAnalyzer(customAnalyzer));
         }
 
-        protected virtual CustomAnalyzerDescriptor ConfigureSearchableFieldAnalyzer(CustomAnalyzerDescriptor customAnalyzer, string documentType)
+        protected virtual CustomAnalyzerDescriptor ConfigureSearchableFieldAnalyzer(CustomAnalyzerDescriptor customAnalyzer)
         {
             // Use ngrams analyzer for search in the middle of the word
-            // http://www.elasticsearch.org/guide/en/elasticsearch/guide/current/ngrams-compound-words.html
             return customAnalyzer
                 .Tokenizer("standard")
                 .Filters("lowercase", GetTokenFilterName());
         }
 
-        protected virtual TokenFiltersDescriptor ConfigureTokenFilters(TokenFiltersDescriptor tokenFilters, string documentType)
+        protected virtual TokenFiltersDescriptor ConfigureTokenFilters(TokenFiltersDescriptor tokenFilters)
         {
             return tokenFilters
-                .NGram(NGramFilterName, descriptor => ConfigureNGramFilter(descriptor, documentType))
-                .EdgeNGram(EdgeNGramFilterName, descriptor => ConfigureEdgeNGramFilter(descriptor, documentType))
-                ;
+                .NGram(NGramFilterName, descriptor => ConfigureNGramFilter(descriptor))
+                .EdgeNGram(EdgeNGramFilterName, descriptor => ConfigureEdgeNGramFilter(descriptor));
         }
 
-        protected virtual NGramTokenFilterDescriptor ConfigureNGramFilter(NGramTokenFilterDescriptor nGram, string documentType)
+        protected virtual NGramTokenFilterDescriptor ConfigureNGramFilter(NGramTokenFilterDescriptor nGram)
         {
             return nGram.MinGram(GetMinGram()).MaxGram(GetMaxGram());
         }
 
-        protected virtual EdgeNGramTokenFilterDescriptor ConfigureEdgeNGramFilter(EdgeNGramTokenFilterDescriptor edgeNGram, string documentType)
+        protected virtual EdgeNGramTokenFilterDescriptor ConfigureEdgeNGramFilter(EdgeNGramTokenFilterDescriptor edgeNGram)
         {
             return edgeNGram.MinGram(GetMinGram()).MaxGram(GetMaxGram());
         }
