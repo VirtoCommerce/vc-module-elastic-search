@@ -413,7 +413,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected virtual AnalyzersDescriptor ConfigureAnalyzers(AnalyzersDescriptor analyzers)
         {
             return analyzers
-                .Custom(SearchableFieldAnalyzerName, customAnalyzer => ConfigureSearchableFieldAnalyzer(customAnalyzer));
+                .Custom(SearchableFieldAnalyzerName, ConfigureSearchableFieldAnalyzer);
         }
 
         protected virtual CustomAnalyzerDescriptor ConfigureSearchableFieldAnalyzer(CustomAnalyzerDescriptor customAnalyzer)
@@ -427,8 +427,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected virtual TokenFiltersDescriptor ConfigureTokenFilters(TokenFiltersDescriptor tokenFilters)
         {
             return tokenFilters
-                .NGram(NGramFilterName, descriptor => ConfigureNGramFilter(descriptor))
-                .EdgeNGram(EdgeNGramFilterName, descriptor => ConfigureEdgeNGramFilter(descriptor));
+                .NGram(NGramFilterName, ConfigureNGramFilter)
+                .EdgeNGram(EdgeNGramFilterName, ConfigureEdgeNGramFilter);
         }
 
         protected virtual NGramTokenFilterDescriptor ConfigureNGramFilter(NGramTokenFilterDescriptor nGram)

@@ -3,7 +3,6 @@ using System.Linq;
 using Nest;
 using Newtonsoft.Json.Linq;
 using VirtoCommerce.Domain.Search;
-using VirtoCommerce.Platform.Core.Common;
 
 namespace VirtoCommerce.ElasticSearchModule.Data
 {
@@ -98,7 +97,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
                 if (singleBucketAggregate != null)
                 {
-                    if (singleBucketAggregate.Keys.Any(x => x.EqualsInvariant(responseKey)))
+                    if (singleBucketAggregate.ContainsKey(responseKey))
                     {
                         bucketAggregate = singleBucketAggregate[responseKey] as BucketAggregate;
                     }
