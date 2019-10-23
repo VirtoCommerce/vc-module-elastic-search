@@ -8,7 +8,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 {
     public static class ElasticSearchResponseBuilder
     {
-        public static SearchResponse ToSearchResponse(this ISearchResponse<SearchDocument> response, Domain.Search.SearchRequest request, string documentType)
+        public static SearchResponse ToSearchResponse(this ISearchResponse<SearchDocument> response, Domain.Search.SearchRequest request)
         {
             var result = new SearchResponse
             {
@@ -25,7 +25,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var result = new SearchDocument { Id = hit.Id };
 
             // Copy fields and convert JArray to object[]
-            var fields = (IDictionary<string, object>)hit.Source ?? hit.Fields;
+            var fields = (IDictionary<string, object>)hit.Source ?? (IDictionary<string, object>)hit.Fields;
+
             if (fields != null)
             {
                 foreach (var kvp in fields)
@@ -96,9 +97,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
                 if (singleBucketAggregate != null)
                 {
-                    if (singleBucketAggregate.Aggregations != null)
+                    if (singleBucketAggregate.ContainsKey(responseKey))
                     {
-                        bucketAggregate = singleBucketAggregate.Aggregations[responseKey] as BucketAggregate;
+                        bucketAggregate = singleBucketAggregate[responseKey] as BucketAggregate;
                     }
                     else if (singleBucketAggregate.DocCount > 0)
                     {

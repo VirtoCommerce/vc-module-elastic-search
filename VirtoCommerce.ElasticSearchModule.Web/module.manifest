@@ -2,9 +2,9 @@
 <module>
     <id>VirtoCommerce.Elasticsearch</id>
     <version>1.1.2</version>
-    <platformVersion>2.13.9</platformVersion>
+    <platformVersion>2.13.24</platformVersion>
     <dependencies>
-        <dependency id="VirtoCommerce.Core" version="2.23.0" />
+        <dependency id="VirtoCommerce.Core" version="2.24.22" />
     </dependencies>
 
     <title>Elasticsearch module</title>

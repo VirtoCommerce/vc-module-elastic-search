@@ -1,3 +1,6 @@
-﻿Elasticsearch.Net.xml
+Elasticsearch.Net.xml
 Nest.xml
+Nest.JsonNetSerializer.xml
+System.Buffers.xml
+System.Diagnostics.DiagnosticSource.xml
 VirtoCommerce.Domain.dll

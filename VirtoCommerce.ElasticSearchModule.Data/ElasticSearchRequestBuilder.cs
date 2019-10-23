@@ -9,9 +9,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 {
     public class ElasticSearchRequestBuilder
     {
-        public virtual ISearchRequest BuildRequest(SearchRequest request, string indexName, string documentType, Properties<IProperties> availableFields)
+        public virtual ISearchRequest BuildRequest(SearchRequest request, string indexName, Properties<IProperties> availableFields)
         {
-            var result = new Nest.SearchRequest(indexName, documentType)
+            var result = new Nest.SearchRequest(indexName)
             {
                 Query = GetQuery(request),
                 PostFilter = GetFilters(request, availableFields),
@@ -76,7 +76,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
             else
             {
-                result = new SortField
+                result = new FieldSort
                 {
                     Field = ElasticSearchHelper.ToElasticFieldName(field.FieldName),
                     Order = field.IsDescending ? SortOrder.Descending : SortOrder.Ascending,
@@ -154,7 +154,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var termValues = termFilter.Values;
 
             var field = availableFields.Where(kvp => kvp.Key.Name.EqualsInvariant(termFilter.FieldName)).Select(kvp => kvp.Value).FirstOrDefault();
-            if (field?.Type?.Name?.EqualsInvariant("boolean") == true)
+            if (field?.Type?.EqualsInvariant("boolean") == true)
             {
                 termValues = termValues.Select(v => v.ToLowerInvariant()).ToArray();
             }
@@ -310,10 +310,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
                 if (termAggregationRequest.Values?.Any() == true)
                 {
-                    termsAggregation.Include = new TermsIncludeExclude
-                    {
-                        Values = termAggregationRequest.Values
-                    };
+                    termsAggregation.Include = new TermsInclude(termAggregationRequest.Values);
                 }
             }
 
