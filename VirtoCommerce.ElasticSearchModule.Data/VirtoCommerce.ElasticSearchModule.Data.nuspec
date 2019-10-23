@@ -11,6 +11,6 @@
         <iconUrl>https://github.com/VirtoCommerce/vc-module-elastic-search/raw/master/NuGet/icon.png</iconUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>Indexed search functionality with Elasticsearch engine</description>
-        <copyright>Copyright © 2017-2018 Virto Commerce. All rights reserved</copyright>
+        <copyright>Copyright © 2017-2019 Virto Commerce. All rights reserved</copyright>
     </metadata>
 </package>
