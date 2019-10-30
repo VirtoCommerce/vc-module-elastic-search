@@ -15,8 +15,8 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyProduct("Virto Commerce Elasticsearch Module")]
 [assembly: AssemblyCopyright("Copyright © VirtoCommerce 2017-2018")]
 
-[assembly: AssemblyFileVersion("1.2.1.0")]
-[assembly: AssemblyVersion("1.2.1.0")]
+[assembly: AssemblyFileVersion("1.2.2.0")]
+[assembly: AssemblyVersion("1.2.2.0")]
 
 #if DEBUG
 [assembly: AssemblyConfiguration("Debug")]
