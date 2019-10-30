@@ -24,7 +24,7 @@ namespace VirtoCommerce.ElasticSearchModule.Web
 
             if (searchConnection?.Provider?.EqualsInvariant("ElasticSearch") == true)
             {
-                _container.RegisterType<ISearchProvider>(
+                _container.RegisterType<ISearchProvider, ElasticSearchProvider>(
                     new ContainerControlledLifetimeManager(),
                     new InjectionFactory(c => new ElasticSearchProvider(
                         c.Resolve<ISearchConnection>(),
