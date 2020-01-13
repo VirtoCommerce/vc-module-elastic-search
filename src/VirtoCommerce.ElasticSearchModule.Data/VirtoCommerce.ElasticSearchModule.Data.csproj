@@ -9,7 +9,7 @@
     <PackageReference Include="NEST" Version="7.4.2" />
     <PackageReference Include="NEST.JsonNetSerializer" Version="7.4.2" />
       <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-      <PackageReference Include="VirtoCommerce.SearchModule.Core" Version="3.0.0-rc.2" />    
+      <PackageReference Include="VirtoCommerce.SearchModule.Core" Version="3.0.0-rc3" />    
   </ItemGroup>
 
 </Project>
