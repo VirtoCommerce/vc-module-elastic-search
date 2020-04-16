@@ -1,18 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
-
   <PropertyGroup>
-      <TargetFramework>netcoreapp3.1</TargetFramework>
-      <IsPackable>False</IsPackable>
-      <OutputType>Library</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <IsPackable>False</IsPackable>
+    <OutputType>Library</OutputType>
   </PropertyGroup>
-
-    <ItemGroup>
-        <PackageReference Include="VirtoCommerce.Platform.Core" Version="3.0.0-rc4" />
-        <PackageReference Include="VirtoCommerce.SearchModule.Core" Version="3.0.0-rc.4" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\VirtoCommerce.ElasticSearchModule.Data\VirtoCommerce.ElasticSearchModule.Data.csproj" />
-    </ItemGroup>
-
+  <ItemGroup>
+    <PackageReference Include="VirtoCommerce.Platform.Core" Version="3.0.0-rc5" />
+    <PackageReference Include="VirtoCommerce.SearchModule.Core" Version="3.0.0-rc.5" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\VirtoCommerce.ElasticSearchModule.Data\VirtoCommerce.ElasticSearchModule.Data.csproj" />
+  </ItemGroup>
 </Project>

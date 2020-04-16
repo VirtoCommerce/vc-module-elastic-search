@@ -1,30 +1,28 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <module>
-    <id>VirtoCommerce.ElasticSearch</id>
-    <version>3.0.0</version>
-    <version-tag>rc.4</version-tag>
-    <platformVersion>3.0.0</platformVersion>
-    <dependencies>
-        <dependency id="VirtoCommerce.Search" version="3.0.0" />
-    </dependencies>
-
-    <title>Elastic Search module</title>
-    <description>Indexed search functionality with Elastic engine</description>
-    <authors>
-        <author>Artem Dudarev</author>
-    </authors>
-    <owners>
-        <owner>Virto Commerce</owner>
-    </owners>
-	<groups>
-        <group>commerce</group>
-    </groups>
-    <projectUrl>https://github.com/VirtoCommerce/vc-module-elastic-search</projectUrl>
-    <iconUrl>https://github.com/VirtoCommerce/vc-module-elastic-search/raw/master/VirtoCommerce.ElasticSearchModule.Web/Content/logo.png</iconUrl>
-    <releaseNotes>Third version.</releaseNotes>
-    <copyright>Copyright © 2020 Virto Commerce. All rights reserved</copyright>
-    <tags>elastic search</tags>
-
-    <assemblyFile>VirtoCommerce.ElasticSearchModule.Web.dll</assemblyFile>
-    <moduleType>VirtoCommerce.ElasticSearchModule.Web.Module, VirtoCommerce.ElasticSearchModule.Web</moduleType>
+  <id>VirtoCommerce.ElasticSearch</id>
+  <version>3.0.0</version>
+  <version-tag>rc.5$</version-tag>
+  <platformVersion>3.0.0</platformVersion>
+  <dependencies>
+    <dependency id="VirtoCommerce.Search" version="3.0.0" />
+  </dependencies>
+  <title>Elastic Search module</title>
+  <description>Indexed search functionality with Elastic engine</description>
+  <authors>
+    <author>Artem Dudarev</author>
+  </authors>
+  <owners>
+    <owner>Virto Commerce</owner>
+  </owners>
+  <groups>
+    <group>commerce</group>
+  </groups>
+  <projectUrl>https://github.com/VirtoCommerce/vc-module-elastic-search</projectUrl>
+  <iconUrl>https://github.com/VirtoCommerce/vc-module-elastic-search/raw/master/VirtoCommerce.ElasticSearchModule.Web/Content/logo.png</iconUrl>
+  <releaseNotes>Third version.</releaseNotes>
+  <copyright>Copyright В© 2020 Virto Commerce. All rights reserved</copyright>
+  <tags>elastic search</tags>
+  <assemblyFile>VirtoCommerce.ElasticSearchModule.Web.dll</assemblyFile>
+  <moduleType>VirtoCommerce.ElasticSearchModule.Web.Module, VirtoCommerce.ElasticSearchModule.Web</moduleType>
 </module>
