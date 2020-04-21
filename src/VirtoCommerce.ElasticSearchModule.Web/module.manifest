@@ -1,12 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <module>
   <id>VirtoCommerce.ElasticSearch</id>
-  <version>3.0.1</version>
+  <version>3.0.2</version>
   <version-tag>
   </version-tag>
   <platformVersion>3.0.0</platformVersion>
   <dependencies>
-    <dependency id="VirtoCommerce.Search" version="3.0.0" />
+    <dependency id="VirtoCommerce.Search" version="3.0.2" />
   </dependencies>
   <title>Elastic Search module</title>
   <description>Indexed search functionality with Elastic engine</description>
