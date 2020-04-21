@@ -20,7 +20,23 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 From = request?.Skip,
                 Size = request?.Take
             };
+            if (request?.IncludeFields != null && request.IncludeFields.Any())
+            {
+                result.Source = GetSourceFilters(request);
+            }
+            return result;
+        }
 
+        protected virtual SourceFilter GetSourceFilters(SearchRequest request)
+        {
+            SourceFilter result = null;
+            if (request?.IncludeFields != null)
+            {
+                return new SourceFilter
+                {
+                    Includes = request.IncludeFields.ToArray()
+                };
+            }
             return result;
         }
 

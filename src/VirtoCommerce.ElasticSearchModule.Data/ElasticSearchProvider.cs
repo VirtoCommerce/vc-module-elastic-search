@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -22,7 +23,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         public const string EdgeNGramFilterName = "custom_edge_ngram";
 
         private readonly ISettingsManager _settingsManager;
-        private readonly Dictionary<string, Properties<IProperties>> _mappings = new Dictionary<string, Properties<IProperties>>();
+        private readonly ConcurrentDictionary<string, Properties<IProperties>> _mappings = new ConcurrentDictionary<string, Properties<IProperties>>();
         private readonly SearchOptions _searchOptions;
         private readonly ElasticSearchOptions _elasticSearchOptions;
 
@@ -234,7 +235,10 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
                 return new TextProperty();
             }
-
+            if(typeof(IEntity).IsAssignableFrom(fieldType))
+            {
+                return new NestedProperty();
+            }
             switch (fieldType.Name)
             {
                 case "Int32":
@@ -272,7 +276,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         protected virtual void ConfigureProperty(IProperty property, IndexDocumentField field)
         {
-            if (property != null)
+            if (property != null && !(property is INestedProperty))
             {
                 if (property is CorePropertyBase baseProperty)
                 {
@@ -352,7 +356,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         protected virtual void RemoveMappingFromCache(string indexName)
         {
-            _mappings.Remove(indexName);
+            _mappings.TryRemove(indexName, out var _);
         }
 
         protected virtual string CreateCacheKey(params string[] parts)
