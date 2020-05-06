@@ -235,7 +235,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
                 return new TextProperty();
             }
-            if(typeof(IEntity).IsAssignableFrom(fieldType))
+            if(typeof(IEntity).IsAssignableFrom(fieldType) || (fieldType.IsArray && typeof(IEntity).IsAssignableFrom(fieldType.GetElementType())))
             {
                 return new NestedProperty();
             }

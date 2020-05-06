@@ -133,6 +133,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 case OrFilter orFilter:
                     result = CreateOrFilter(orFilter, availableFields);
                     break;
+                case WildCardTermFilter wildcardTermFilter:
+                    result = CreateWildcardTermFilter(wildcardTermFilter);
+                    break;
             }
 
             return result;
@@ -148,6 +151,15 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
 
             return result;
+        }
+
+        protected virtual QueryContainer CreateWildcardTermFilter(WildCardTermFilter wildcardTermFilter)
+        {
+            return new WildcardQuery
+            {
+                Field = ElasticSearchHelper.ToElasticFieldName(wildcardTermFilter.FieldName),
+                Value = wildcardTermFilter.Value
+            };
         }
 
         protected virtual QueryContainer CreateTermFilter(TermFilter termFilter, Properties<IProperties> availableFields)
@@ -167,6 +179,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             };
         }
 
+      
         protected virtual QueryContainer CreateRangeFilter(RangeFilter rangeFilter)
         {
             QueryContainer result = null;
