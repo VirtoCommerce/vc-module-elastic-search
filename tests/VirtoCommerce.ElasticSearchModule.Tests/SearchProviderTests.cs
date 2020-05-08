@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using VirtoCommerce.SearchModule.Core.Model;
@@ -1025,6 +1026,39 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             Assert.Equal(1, GetAggregationValueCount(response, "Color", "Black"));
             Assert.Equal(1, GetAggregationValueCount(response, "Color", "Blue"));
             Assert.Equal(0, GetAggregationValueCount(response, "Color", "Silver"));
+        }
+
+        [Fact(Skip = "Need to be fixed")]
+        public virtual async Task CanAddDocumentsWithEqualsPropertyNamesButDifferentTypes()
+        {
+            var provider = GetSearchProvider();
+            var documents = new List<IndexDocument>
+            {
+                new IndexDocument("testId")
+                {
+                    Fields = new List<IndexDocumentField>
+                    {
+                        new IndexDocumentField("screen size", 2.5),
+                    }
+                }
+            };
+
+            await provider.DeleteIndexAsync(DocumentType);
+            await provider.IndexAsync(DocumentType, documents);
+
+            documents.Clear();
+            documents.Add(new IndexDocument("testId2")
+            {
+                Fields = new List<IndexDocumentField>
+                {
+                    new IndexDocumentField("screen size", "2.5\""),
+                }
+            });
+
+            var result = (await provider.IndexAsync(DocumentType, documents)).Items.First();
+
+            Assert.True(result.Succeeded);
+            Assert.Empty(result.ErrorMessage);
         }
     }
 }
