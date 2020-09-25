@@ -24,6 +24,12 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             {
                 result.Source = GetSourceFilters(request);
             }
+
+            if (request?.Take == 1)
+            {
+                result.TrackTotalHits = true;
+            }
+
             return result;
         }
 
@@ -179,7 +185,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             };
         }
 
-      
+
         protected virtual QueryContainer CreateRangeFilter(RangeFilter rangeFilter)
         {
             QueryContainer result = null;
