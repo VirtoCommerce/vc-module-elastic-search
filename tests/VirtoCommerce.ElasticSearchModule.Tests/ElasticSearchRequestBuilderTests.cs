@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using AutoFixture;
 using FluentAssertions;
+using Moq;
 using Nest;
 using VirtoCommerce.ElasticSearchModule.Data;
 using VirtoCommerce.SearchModule.Core.Model;
@@ -33,9 +34,14 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
                 FieldName = fieldName
             };
 
+            var booleanPropertyMock = new Mock<IProperty>();
+            booleanPropertyMock
+                .SetupGet(x => x.Type)
+                .Returns("boolean");
+
             var availableFields = new Properties<IProperties>(new Dictionary<PropertyName, IProperty>
             {
-                { fieldName, new BooleanPropertyTestProxy() }
+                { fieldName, booleanPropertyMock.Object }
             });
 
             // Act
@@ -52,13 +58,5 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         {
             return base.CreateTermFilter(termFilter, availableFields);
         }
-    }
-
-    public class BooleanPropertyTestProxy : IProperty
-    {
-        public IDictionary<string, object> LocalMetadata { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public IDictionary<string, string> Meta { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public PropertyName Name { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public string Type { get => "boolean"; set => throw new NotImplementedException(); }
     }
 }
