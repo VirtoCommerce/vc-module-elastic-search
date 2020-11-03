@@ -121,24 +121,31 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 case IdsFilter idsFilter:
                     result = CreateIdsFilter(idsFilter);
                     break;
+
                 case TermFilter termFilter:
                     result = CreateTermFilter(termFilter, availableFields);
                     break;
+
                 case RangeFilter rangeFilter:
                     result = CreateRangeFilter(rangeFilter);
                     break;
+
                 case GeoDistanceFilter geoDistanceFilter:
                     result = CreateGeoDistanceFilter(geoDistanceFilter);
                     break;
+
                 case NotFilter notFilter:
                     result = CreateNotFilter(notFilter, availableFields);
                     break;
+
                 case AndFilter andFilter:
                     result = CreateAndFilter(andFilter, availableFields);
                     break;
+
                 case OrFilter orFilter:
                     result = CreateOrFilter(orFilter, availableFields);
                     break;
+
                 case WildCardTermFilter wildcardTermFilter:
                     result = CreateWildcardTermFilter(wildcardTermFilter);
                     break;
@@ -175,7 +182,12 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var field = availableFields.Where(kvp => kvp.Key.Name.EqualsInvariant(termFilter.FieldName)).Select(kvp => kvp.Value).FirstOrDefault();
             if (field?.Type?.EqualsInvariant("boolean") == true)
             {
-                termValues = termValues.Select(v => v.ToLowerInvariant()).ToArray();
+                termValues = termValues.Select(v => v switch
+                {
+                    "1" => "true",
+                    "0" => "false",
+                    _ => v.ToLowerInvariant()
+                }).ToArray();
             }
 
             return new TermsQuery
@@ -184,7 +196,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 Terms = termValues
             };
         }
-
 
         protected virtual QueryContainer CreateRangeFilter(RangeFilter rangeFilter)
         {
