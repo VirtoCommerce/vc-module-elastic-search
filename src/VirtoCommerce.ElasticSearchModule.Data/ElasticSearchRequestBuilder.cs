@@ -9,8 +9,12 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 {
     public class ElasticSearchRequestBuilder
     {
+        
+        // Used to map 'score' sort field to Elastic Search _score sorting field 
+        private const string Score = "score";
         public virtual ISearchRequest BuildRequest(SearchRequest request, string indexName, Properties<IProperties> availableFields)
         {
+            
             var result = new Nest.SearchRequest(indexName)
             {
                 Query = GetQuery(request),
@@ -18,7 +22,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 Aggregations = GetAggregations(request, availableFields),
                 Sort = GetSorting(request?.Sorting),
                 From = request?.Skip,
-                Size = request?.Take
+                Size = request?.Take,
+                TrackScores = request?.Sorting.Any(x=>x.FieldName == Score) ?? false
             };
             if (request?.IncludeFields != null && request.IncludeFields.Any())
             {
@@ -91,6 +96,14 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     Field = ElasticSearchHelper.ToElasticFieldName(field.FieldName),
                     Points = new[] { geoSorting.Location.ToGeoLocation() },
                     Order = geoSorting.IsDescending ? SortOrder.Descending : SortOrder.Ascending,
+                };
+            }
+            else if (field.FieldName.ToLowerInvariant() == Score) 
+            {
+                result = new FieldSort
+                {
+                    Field = new Field("_score"),
+                    Order = field.IsDescending ? SortOrder.Descending : SortOrder.Ascending
                 };
             }
             else
