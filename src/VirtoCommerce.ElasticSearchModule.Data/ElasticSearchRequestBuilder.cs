@@ -9,12 +9,11 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 {
     public class ElasticSearchRequestBuilder
     {
-        
         // Used to map 'score' sort field to Elastic Search _score sorting field 
         private const string Score = "score";
+
         public virtual ISearchRequest BuildRequest(SearchRequest request, string indexName, Properties<IProperties> availableFields)
         {
-            
             var result = new Nest.SearchRequest(indexName)
             {
                 Query = GetQuery(request),
@@ -23,8 +22,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 Sort = GetSorting(request?.Sorting),
                 From = request?.Skip,
                 Size = request?.Take,
-                TrackScores = request?.Sorting.Any(x=>x.FieldName == Score) ?? false
+                TrackScores = request?.Sorting.Any(x => x.FieldName.EqualsInvariant(Score)) ?? false
             };
+
             if (request?.IncludeFields != null && request.IncludeFields.Any())
             {
                 result.Source = GetSourceFilters(request);
@@ -43,11 +43,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             SourceFilter result = null;
             if (request?.IncludeFields != null)
             {
-                return new SourceFilter
-                {
-                    Includes = request.IncludeFields.ToArray()
-                };
+                return new SourceFilter { Includes = request.IncludeFields.ToArray() };
             }
+
             return result;
         }
 
@@ -98,7 +96,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     Order = geoSorting.IsDescending ? SortOrder.Descending : SortOrder.Ascending,
                 };
             }
-            else if (field.FieldName.ToLowerInvariant() == Score) 
+            else if (field.FieldName.EqualsInvariant(Score))
             {
                 result = new FieldSort
                 {
@@ -365,10 +363,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
             else
             {
-                var filterAggregation = new FilterAggregation(aggregationId)
-                {
-                    Filter = filter,
-                };
+                var filterAggregation = new FilterAggregation(aggregationId) { Filter = filter };
 
                 if (termsAggregation != null)
                 {
