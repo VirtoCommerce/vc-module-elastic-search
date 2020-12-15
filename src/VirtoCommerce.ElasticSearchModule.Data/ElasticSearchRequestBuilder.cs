@@ -22,7 +22,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 Sort = GetSorting(request?.Sorting),
                 From = request?.Skip,
                 Size = request?.Take,
-                TrackScores = request?.Sorting.Any(x => x.FieldName.EqualsInvariant(Score)) ?? false
+                TrackScores = request?.Sorting?.Any(x => x.FieldName.EqualsInvariant(Score)) ?? false
             };
 
             if (request?.IncludeFields != null && request.IncludeFields.Any())
