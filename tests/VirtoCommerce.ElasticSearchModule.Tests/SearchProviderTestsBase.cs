@@ -188,7 +188,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             Task<T> GetValueAsync<T>(string name, T defaultValue);
         }
 
-        [ObjectValueSerializedAsStringForIndex]
+        [ObjectValueToString(nameof(Value))]
         public class TestObjectValue : IEntity
         {
             public TestObjectValue(object value, string valueType)

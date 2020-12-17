@@ -9,6 +9,7 @@ using Nest;
 using Nest.JsonNetSerializer;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using VirtoCommerce.ElasticSearchModule.Data.JsonConverters;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.ObjectValue;
 using VirtoCommerce.Platform.Core.Settings;
@@ -479,8 +480,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var accessKey = options.Key;
             var pool = new SingleNodeConnectionPool(serverUrl);
             var connectionSettings = new ConnectionSettings(pool,
-                    (builtin, settings) => new JsonNetSerializer(builtin, settings, () =>
-                        new JsonSerializerSettings { Converters = new List<JsonConverter> { new ObjectValueJsonConverter() }}));
+                    (builtin, settings) => new JsonNetSerializer(builtin, settings, null, null, new[] { new ObjectValueJsonConverter() }));
 
             if (!string.IsNullOrEmpty(accessUser) && !string.IsNullOrEmpty(accessKey))
             {
