@@ -4,12 +4,15 @@ using System.Linq;
 using System.Threading.Tasks;
 using Moq;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.Platform.Core.ObjectValue;
 using VirtoCommerce.Platform.Core.Settings;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
 
 namespace VirtoCommerce.ElasticSearchModule.Tests
 {
+    
+
     public abstract class SearchProviderTestsBase
     {
         protected abstract ISearchProvider GetSearchProvider();
@@ -18,11 +21,11 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         {
             return new List<IndexDocument>
             {
-                CreateDocument("Item-1", "Sample Product", "Red", "2017-04-28T15:24:31.180Z", 2, "0,0", null, null, new Price("USD", "default", 123.23m)),
-                CreateDocument("Item-2", "Red Shirt 2", "Red", "2017-04-27T15:24:31.180Z", 4, "0,10", null, null, new Price("USD", "default", 200m), new Price("USD", "sale", 99m), new Price("EUR", "sale", 300m)),
-                CreateDocument("Item-3", "Red Shirt", "Red", "2017-04-26T15:24:31.180Z", 3, "0,20", null, null, new Price("USD", "default", 10m)),
-                CreateDocument("Item-4", "Black Sox", "Black", "2017-04-25T15:24:31.180Z", 10, "0,30", null, null, new Price("USD", "default", 243.12m), new Price("USD", "supersale", 89m)),
-                CreateDocument("Item-5", "Black Sox2", "Silver", "2017-04-24T15:24:31.180Z", 20, "0,40", null, null, new Price("USD", "default", 700m)),
+                CreateDocument("Item-1", "Sample Product", "Red", "2017-04-28T15:24:31.180Z", 2, "0,0", null, null, new TestObjectValue(true, "Boolean"), new Price("USD", "default", 123.23m)),
+                CreateDocument("Item-2", "Red Shirt 2", "Red", "2017-04-27T15:24:31.180Z", 4, "0,10", null, null, new TestObjectValue("string", "ShortText"), new Price("USD", "default", 200m), new Price("USD", "sale", 99m), new Price("EUR", "sale", 300m)),
+                CreateDocument("Item-3", "Red Shirt", "Red", "2017-04-26T15:24:31.180Z", 3, "0,20", null, null, new TestObjectValue(true, "Boolean"), new Price("USD", "default", 10m)),
+                CreateDocument("Item-4", "Black Sox", "Black", "2017-04-25T15:24:31.180Z", 10, "0,30", null, null, new TestObjectValue(99.99m, "Number"), new Price("USD", "default", 243.12m), new Price("USD", "supersale", 89m)),
+                CreateDocument("Item-5", "Black Sox2", "Silver", "2017-04-24T15:24:31.180Z", 20, "0,40", null, null, new TestObjectValue(new DateTime(2020, 12, 17, 0, 0, 0), "DateTime"), new Price("USD", "default", 700m)),
             };
         }
 
@@ -38,7 +41,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             };
         }
 
-        protected virtual IndexDocument CreateDocument(string id, string name, string color, string date, int size, string location, string name2, DateTime? date2, params Price[] prices)
+        protected virtual IndexDocument CreateDocument(string id, string name, string color, string date, int size, string location, string name2, DateTime? date2, object obj, params Price[] prices)
         {
             var doc = new IndexDocument(id);
 
@@ -84,6 +87,8 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             {
                 doc.Add(new IndexDocumentField("Date (2)", date2) { IsRetrievable = true, IsFilterable = true });
             }
+
+            doc.Add(new IndexDocumentField("__obj", obj) { IsRetrievable = true, IsFilterable = true });
 
             return doc;
         }
@@ -181,6 +186,21 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         {
             T GetValue<T>(string name, T defaultValue);
             Task<T> GetValueAsync<T>(string name, T defaultValue);
+        }
+
+        [ObjectValueSerializedAsStringForIndex]
+        public class TestObjectValue : IEntity
+        {
+            public TestObjectValue(object value, string valueType)
+            {
+                Value = value;
+                ValueType = valueType;
+                Id = Guid.NewGuid().ToString();
+            }
+
+            public object Value { get; set; }
+            public string ValueType { get; set; }
+            public string Id { get; set; }
         }
     }
 }

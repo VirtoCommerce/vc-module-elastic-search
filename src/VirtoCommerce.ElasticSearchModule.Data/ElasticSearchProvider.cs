@@ -7,7 +7,10 @@ using Elasticsearch.Net;
 using Microsoft.Extensions.Options;
 using Nest;
 using Nest.JsonNetSerializer;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.Platform.Core.ObjectValue;
 using VirtoCommerce.Platform.Core.Settings;
 using VirtoCommerce.SearchModule.Core.Exceptions;
 using VirtoCommerce.SearchModule.Core.Model;
@@ -235,7 +238,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
                 return new TextProperty();
             }
-            if(typeof(IEntity).IsAssignableFrom(fieldType) || (fieldType.IsArray && typeof(IEntity).IsAssignableFrom(fieldType.GetElementType())))
+            if (typeof(IEntity).IsAssignableFrom(fieldType) || (fieldType.IsArray && typeof(IEntity).IsAssignableFrom(fieldType.GetElementType())))
             {
                 return new NestedProperty();
             }
@@ -475,7 +478,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var accessUser = options.User;
             var accessKey = options.Key;
             var pool = new SingleNodeConnectionPool(serverUrl);
-            var connectionSettings = new ConnectionSettings(pool, sourceSerializer: JsonNetSerializer.Default);
+            var connectionSettings = new ConnectionSettings(pool,
+                    (builtin, settings) => new JsonNetSerializer(builtin, settings, () =>
+                        new JsonSerializerSettings { Converters = new List<JsonConverter> { new ObjectValueJsonConverter() }}));
 
             if (!string.IsNullOrEmpty(accessUser) && !string.IsNullOrEmpty(accessKey))
             {
