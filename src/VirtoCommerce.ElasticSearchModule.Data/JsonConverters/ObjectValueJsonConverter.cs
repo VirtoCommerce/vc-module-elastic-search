@@ -46,9 +46,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data.JsonConverters
         private string ConvertValue(object value)
         {
             string result;
-            var t = value.GetType();
 
-            switch (t)
+            switch (value.GetType())
             {
                 case var type when type == typeof(string):
                     result = Convert.ToString(value);
