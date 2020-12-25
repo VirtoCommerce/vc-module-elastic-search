@@ -408,7 +408,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 ThrowException("Failed to create index. " + response.DebugInformation, response.OriginalException);
             }
         }
-        
+
         protected virtual IndexSettingsDescriptor ConfigureIndexSettings(IndexSettingsDescriptor settings)
         {
             // https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html#mapping-limit-settings
