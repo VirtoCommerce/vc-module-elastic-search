@@ -486,7 +486,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var accessUser = options.User;
             var accessKey = options.Key;
             var pool = new SingleNodeConnectionPool(serverUrl);
-            var connectionSettings = new ConnectionSettings(pool, JsonNetSerializer.Default);
+            var connectionSettings = new ConnectionSettings(pool, sourceSerializer: JsonNetSerializer.Default);
 
             if (!string.IsNullOrEmpty(accessUser) && !string.IsNullOrEmpty(accessKey))
             {
