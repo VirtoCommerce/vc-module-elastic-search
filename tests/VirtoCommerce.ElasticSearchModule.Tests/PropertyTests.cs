@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using VirtoCommerce.ElasticSearchModule.Data.Extensions;
 using Xunit;
@@ -13,9 +12,9 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         {
             var obj = new TestObjectValue(true, "Boolean");
 
-            var res = obj.GetFullPropertyNamesFromObject<object>(6).ToArray();
+            var res = obj.GetFullPropertyNames<object>(6).ToArray();
 
-            Assert.Equal(new[] { "Properties.Values.Value", "Properties.ValueInProperty.Value" }, res);
+            Assert.Equal(new[] { "properties.values.value", "properties.valueInProperty.value" }, res);
         }
     }
 }

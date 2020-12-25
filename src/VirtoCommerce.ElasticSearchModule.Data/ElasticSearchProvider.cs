@@ -299,9 +299,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             {
                 //VP-6107: need to index all object with type 'Object' as 'Text' in NestedProperty
                 //There are Properties.Values.Value in Category/Product
-                var objects = field.Value.GetFullPropertyNamesFromObject<object>(deep: 7).Distinct().ToList();
+                var objects = field.Value.GetFullPropertyNames<object>(deep: 7).Distinct().ToList();
                 nestedProperty.Properties = new Properties(objects
-                                .Select((v, i) => new { Key = new PropertyName(v.ToLower()), Value = new TextProperty() })
+                                .Select((v, i) => new { Key = new PropertyName(v), Value = new TextProperty() })
                                 .ToDictionary(o => o.Key, o => (IProperty)o.Value));
             }
         }
