@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Moq;
 using VirtoCommerce.Platform.Core.Common;
-using VirtoCommerce.Platform.Core.ObjectValue;
 using VirtoCommerce.Platform.Core.Settings;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
@@ -188,18 +187,35 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             Task<T> GetValueAsync<T>(string name, T defaultValue);
         }
 
-        [ObjectValueToString(nameof(Value))]
         public class TestObjectValue : IEntity
         {
             public TestObjectValue(object value, string valueType)
             {
-                Value = value;
-                ValueType = valueType;
                 Id = Guid.NewGuid().ToString();
+                var values = new List<PropertyValue> { new PropertyValue { Value = value, ValueType = valueType } } ;
+                Properties.Add(new Property { Values = values, ValueInProperty = new PropertyValue { Value = value, ValueType = valueType } });
             }
 
+            public IList<Property> Properties { get; set; } = new List<Property>(); 
+            public string Id { get; set; }
+            
+        }
+
+        public class Property : IEntity
+        {
+            public string[] Ids { get; set; }
+            public IList<PropertyValue> Values { get; set; } = new List<PropertyValue>();
+            public string ValueType { get; set; }
+            public bool IsActive { get; set; }
+            public PropertyValue ValueInProperty { get; set; }
+            public string Id { get; set; }
+        }
+
+        public class PropertyValue : IEntity
+        {
             public object Value { get; set; }
             public string ValueType { get; set; }
+            public bool IsActive { get; set; }
             public string Id { get; set; }
         }
     }

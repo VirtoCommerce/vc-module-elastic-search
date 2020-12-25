@@ -7,11 +7,8 @@ using Elasticsearch.Net;
 using Microsoft.Extensions.Options;
 using Nest;
 using Nest.JsonNetSerializer;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using VirtoCommerce.ElasticSearchModule.Data.JsonConverters;
+using VirtoCommerce.ElasticSearchModule.Data.Extensions;
 using VirtoCommerce.Platform.Core.Common;
-using VirtoCommerce.Platform.Core.ObjectValue;
 using VirtoCommerce.Platform.Core.Settings;
 using VirtoCommerce.SearchModule.Core.Exceptions;
 using VirtoCommerce.SearchModule.Core.Model;
@@ -178,6 +175,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
+
         protected virtual SearchDocument ConvertToProviderDocument(IndexDocument document, Properties<IProperties> properties)
         {
             var result = new SearchDocument { Id = document.Id };
@@ -227,7 +225,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             return result;
         }
-
+                
         protected virtual IProperty CreateProviderField(IndexDocumentField field)
         {
             var fieldType = field.Value?.GetType() ?? typeof(object);
@@ -296,6 +294,15 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                         ConfigureKeywordProperty(keywordProperty, field);
                         break;
                 }
+            }
+            else if (property is NestedProperty nestedProperty)
+            {
+                //VP-6107: need to index all object with type 'Object' as 'Text' in NestedProperty
+                //There are Properties.Values.Value in Category/Product
+                var objects = field.Value.GetFullPropertyNamesFromObject<object>(deep: 7).Distinct().ToList();
+                nestedProperty.Properties = new Properties(objects
+                                .Select((v, i) => new { Key = new PropertyName(v.ToLower()), Value = new TextProperty() })
+                                .ToDictionary(o => o.Key, o => (IProperty)o.Value));
             }
         }
 
@@ -401,7 +408,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 ThrowException("Failed to create index. " + response.DebugInformation, response.OriginalException);
             }
         }
-
+        
         protected virtual IndexSettingsDescriptor ConfigureIndexSettings(IndexSettingsDescriptor settings)
         {
             // https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html#mapping-limit-settings
@@ -479,8 +486,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var accessUser = options.User;
             var accessKey = options.Key;
             var pool = new SingleNodeConnectionPool(serverUrl);
-            var connectionSettings = new ConnectionSettings(pool,
-                    (builtin, settings) => new JsonNetSerializer(builtin, settings, null, null, new[] { new ObjectValueJsonConverter() }));
+            var connectionSettings = new ConnectionSettings(pool, JsonNetSerializer.Default);
 
             if (!string.IsNullOrEmpty(accessUser) && !string.IsNullOrEmpty(accessKey))
             {
