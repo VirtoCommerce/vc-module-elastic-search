@@ -225,7 +225,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             return result;
         }
-    
+
         protected virtual IProperty CreateProviderField(IndexDocumentField field)
         {
             var fieldType = field.Value?.GetType() ?? typeof(object);
