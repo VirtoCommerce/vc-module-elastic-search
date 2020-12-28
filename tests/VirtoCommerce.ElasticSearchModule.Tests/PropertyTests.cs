@@ -12,9 +12,16 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         {
             var obj = new TestObjectValue(true, "Boolean");
 
-            var res = obj.GetFullPropertyNames<object>(6).ToArray();
+            var res = obj.GetFullPropertyNames<object>(7).ToArray();
+            var paths = PropertyExtensions._path;
 
-            Assert.Equal(new[] { "properties.values.value", "properties.valueInProperty.value" }, res);
+            Assert.Equal(
+                new[]
+                {
+                    "properties.values.value",
+                    "properties.valueInProperty.value",
+                    "properties.values.property.values.property.valueInProperty.value"
+                }, res);
         }
     }
 }

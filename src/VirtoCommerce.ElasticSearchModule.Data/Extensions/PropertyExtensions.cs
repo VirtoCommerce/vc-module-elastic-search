@@ -8,6 +8,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data.Extensions
 {
     public static class PropertyExtensions
     {
+        public readonly static HashSet<string> _path = new HashSet<string>();
         public static IEnumerable<string> GetFullPropertyNames<T>(this object obj, int deep)
         {
             if (obj == null || obj.GetType().IsPrimitive || deep <= 0)
@@ -36,23 +37,22 @@ namespace VirtoCommerce.ElasticSearchModule.Data.Extensions
                                 var enumerable = (IEnumerable)propValue;
                                 foreach (var child in enumerable)
                                 {
-                                    foreach (var item in GetFullPropertyNames<T>(child, deep - 1))
+                                    foreach (var item in GetFullPropertyNames<T>(child, deep - 1).Where(i => !string.IsNullOrEmpty(i)))
                                     {
-                                        if (!string.IsNullOrEmpty(item))
+                                        var path = $"{propertyInfo.Name.ToCamelCase()}.{item}";
+                                        if (!_path.Any(p => p.Equals(path)))
                                         {
-                                            yield return $"{propertyInfo.Name.ToCamelCase()}.{item}";
+                                            _path.Add(path);
+                                            yield return path;
                                         }
                                     }
                                 }
                             }
                             else if (propertyInfo.PropertyType.Assembly == t.Assembly)
                             {
-                                foreach (var item in GetFullPropertyNames<T>(propValue, deep - 1))
+                                foreach (var item in GetFullPropertyNames<T>(propValue, deep - 1).Where(i => !string.IsNullOrEmpty(i)))
                                 {
-                                    if (!string.IsNullOrEmpty(item))
-                                    {
-                                        yield return $"{propertyInfo.Name.ToCamelCase()}.{item}";
-                                    }
+                                    yield return $"{propertyInfo.Name.ToCamelCase()}.{item}";
                                 }
                             }
                                         
