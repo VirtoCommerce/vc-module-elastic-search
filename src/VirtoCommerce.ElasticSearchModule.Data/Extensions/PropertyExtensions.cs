@@ -46,7 +46,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data.Extensions
             {
                 var t = obj.GetType();
                 var props = t.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                                .Where(x => x.CanRead && x.CanWrite)
+                                .Where(x => x.CanRead && x.CanWrite && IsNested(x.PropertyType))
                                 .ToList();
                 foreach (var propertyInfo in props)
                 {
@@ -57,7 +57,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data.Extensions
                     }
                     else
                     {
-                        var type = GetElementType(propertyInfo.PropertyType);
+                        var type = GetElementTypeOrSelf(propertyInfo.PropertyType);
                         if (type != null)
                         {
                             var propValue = propertyInfo.GetValue(obj, null);
@@ -87,7 +87,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data.Extensions
             }
         }
 
-        static Type GetElementType(Type type)
+        static Type GetElementTypeOrSelf(Type type)
         {
             if (type.IsArray && typeof(IEntity).IsAssignableFrom(type.GetElementType()))
                 return type.GetElementType();
@@ -98,6 +98,19 @@ namespace VirtoCommerce.ElasticSearchModule.Data.Extensions
             if (type.GetGenericTypeDefinition() != typeof(IList<>))
                 return null;
             return type.GetGenericArguments()[0];
+        }
+
+        static bool IsNested(Type type)
+        {
+            if (type.Equals(typeof(string)) || (type.IsArray && typeof(string).IsAssignableFrom(type.GetElementType())))
+            {
+                return false;
+            }
+
+            return (type.IsArray && typeof(IEntity).IsAssignableFrom(type.GetElementType()))
+                || (typeof(IEntity).IsAssignableFrom(type))
+                || !type.IsPrimitive
+                || type.Equals(typeof(object));
         }
 
         static string ToCamelCase(this string str) => string.IsNullOrEmpty(str) || str.Length< 2 ? str : char.ToLowerInvariant(str[0]) + str.Substring(1);
