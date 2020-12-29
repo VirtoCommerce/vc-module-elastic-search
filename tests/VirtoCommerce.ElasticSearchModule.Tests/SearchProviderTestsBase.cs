@@ -194,26 +194,29 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
                 Id = Guid.NewGuid().ToString();
                 var propValue = new PropertyValue { Value = value, ValueType = valueType };
                 var values = new List<PropertyValue> { propValue };
-                var property = new Property { Values = values, ValueInProperty = new PropertyValue { Value = propValue, ValueType = valueType } };
-                
-                Properties.Add(property);
+                var property = new Property
+                {
+                    Values = values,
+                    ValueInProperty = propValue,
+                    Value = value
+                };
 
-                propValue.Property = property;
+                TestProperties.Add(property);
             }
 
-            public IList<Property> Properties { get; set; } = new List<Property>(); 
+            public IList<Property> TestProperties { get; set; } = new List<Property>(); 
             public string Id { get; set; }
-            
         }
 
         public class Property : IEntity
         {
             public string[] Ids { get; set; }
             public IList<PropertyValue> Values { get; set; } = new List<PropertyValue>();
+            public PropertyValue ValueInProperty { get; set; }
             public string ValueType { get; set; }
             public bool IsActive { get; set; }
-            public PropertyValue ValueInProperty { get; set; }
             public string Id { get; set; }
+            public object Value { get; set; }
         }
 
         public class PropertyValue : IEntity
@@ -222,7 +225,6 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             public string ValueType { get; set; }
             public bool IsActive { get; set; }
             public string Id { get; set; }
-            public Property Property { get; set; }
         }
     }
 }

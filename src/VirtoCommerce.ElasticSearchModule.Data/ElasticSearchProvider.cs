@@ -297,9 +297,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
             else if (property is NestedProperty nestedProperty)
             {
-                //VP-6107: need to index all object with type 'Object' as 'Text' in NestedProperty
+                //VP-6107: need to index all objects with type 'Object' as 'Text'
                 //There are Properties.Values.Value in Category/Product
-                var objects = field.Value.GetFullPropertyNames<object>(deep: 7).Distinct().ToList();
+                var objects = field.Value.GetPropertyNames<object>(deep: 7).Distinct().ToList();
                 nestedProperty.Properties = new Properties(objects
                                 .Select((v, i) => new { Key = new PropertyName(v), Value = new TextProperty() })
                                 .ToDictionary(o => o.Key, o => (IProperty)o.Value));

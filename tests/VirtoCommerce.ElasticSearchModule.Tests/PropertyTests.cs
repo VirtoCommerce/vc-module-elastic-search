@@ -8,19 +8,18 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
     public class PropertyTests
     {
         [Fact]
-        public void GetFullPropertyNamesFromObject_GetAllNamesInDeepSix()
+        public void GetPropertyNames_GetAllNamesFromAnObjectInDeepSeven()
         {
-            var obj = new TestObjectValue(true, "Boolean");
+            var objects = new[] { new TestObjectValue(true, "Boolean"), new TestObjectValue(99.99m, "Number") };
 
-            var res = obj.GetFullPropertyNames<object>(7).ToArray();
-            var paths = PropertyExtensions._path;
+            var res = objects.SelectMany(o => o.GetPropertyNames<object>(7)).Distinct().ToArray();
 
             Assert.Equal(
                 new[]
                 {
-                    "properties.values.value",
-                    "properties.valueInProperty.value",
-                    "properties.values.property.values.property.valueInProperty.value"
+                    "testProperties.values.value",
+                    "testProperties.valueInProperty.value",
+                    "testProperties.value"
                 }, res);
         }
     }
