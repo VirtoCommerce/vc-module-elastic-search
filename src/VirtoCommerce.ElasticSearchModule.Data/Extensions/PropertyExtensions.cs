@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -9,7 +10,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data.Extensions
 {
     public static class PropertyExtensions
     {
-        public readonly static Dictionary<Type, IList<string>> _properties = new Dictionary<Type, IList<string>>();
+        static ConcurrentDictionary<Type, IList<string>> _properties = new ConcurrentDictionary<Type, IList<string>>();
 
         public static IEnumerable<string> GetPropertyNames<T>(this object obj, int deep)
         {
@@ -68,7 +69,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data.Extensions
                                     {
                                         foreach (var item in GetPropertyNamesInner<T>(child, deep - 1).Where(i => !string.IsNullOrEmpty(i)))
                                         {
-                                            yield return $"{propertyName}.{item}"; ;
+                                            yield return $"{propertyName}.{item}";
                                         }
                                     }
                                 }
