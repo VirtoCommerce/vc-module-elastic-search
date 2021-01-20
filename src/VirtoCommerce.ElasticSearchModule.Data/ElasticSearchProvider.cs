@@ -7,6 +7,7 @@ using Elasticsearch.Net;
 using Microsoft.Extensions.Options;
 using Nest;
 using Nest.JsonNetSerializer;
+using VirtoCommerce.ElasticSearchModule.Data.Extensions;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Settings;
 using VirtoCommerce.SearchModule.Core.Exceptions;
@@ -174,6 +175,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
+
         protected virtual SearchDocument ConvertToProviderDocument(IndexDocument document, Properties<IProperties> properties)
         {
             var result = new SearchDocument { Id = document.Id };
@@ -235,7 +237,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
                 return new TextProperty();
             }
-            if(typeof(IEntity).IsAssignableFrom(fieldType) || (fieldType.IsArray && typeof(IEntity).IsAssignableFrom(fieldType.GetElementType())))
+            if (typeof(IEntity).IsAssignableFrom(fieldType) || (fieldType.IsArray && typeof(IEntity).IsAssignableFrom(fieldType.GetElementType())))
             {
                 return new NestedProperty();
             }
@@ -292,6 +294,15 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                         ConfigureKeywordProperty(keywordProperty, field);
                         break;
                 }
+            }
+            else if (property is NestedProperty nestedProperty)
+            {
+                //VP-6107: need to index all objects with type 'Object' as 'Text'
+                //There are Properties.Values.Value in Category/Product
+                var objects = field.Value.GetPropertyNames<object>(deep: 7).Distinct().ToList();
+                nestedProperty.Properties = new Properties(objects
+                                .Select((v, i) => new { Key = new PropertyName(v), Value = new TextProperty() })
+                                .ToDictionary(o => o.Key, o => (IProperty)o.Value));
             }
         }
 
