@@ -9,18 +9,18 @@ using VirtoCommerce.SearchModule.Core.Services;
 
 namespace VirtoCommerce.ElasticSearchModule.Web
 {
-    public class Module : IModule
+    public class Module : IModule, IHasConfiguration
     {
         public ManifestModuleInfo ModuleInfo { get; set; }
+        public IConfiguration Configuration { get; set; }
 
         public void Initialize(IServiceCollection serviceCollection)
         {
-            var configuration = serviceCollection.BuildServiceProvider().GetService<IConfiguration>();
-            var provider = configuration.GetValue<string>("Search:Provider");
+            var provider = Configuration.GetValue<string>("Search:Provider");
 
             if (provider.EqualsInvariant("ElasticSearch"))
             {
-                serviceCollection.Configure<ElasticSearchOptions>(configuration.GetSection("Search:ElasticSearch"));
+                serviceCollection.Configure<ElasticSearchOptions>(Configuration.GetSection("Search:ElasticSearch"));
                 serviceCollection.AddSingleton<ISearchProvider, ElasticSearchProvider>();
             }
         }
