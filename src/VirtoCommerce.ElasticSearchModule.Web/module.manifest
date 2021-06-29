@@ -3,7 +3,7 @@
   <id>VirtoCommerce.ElasticSearch</id>
   <version>3.7.0</version>
   <version-tag />
-  <platformVersion>3.48.0</platformVersion>
+  <platformVersion>3.68.0</platformVersion>
   <title>Elastic Search module</title>
   <description>Indexed search functionality with Elastic engine</description>
   <authors>
