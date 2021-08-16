@@ -207,7 +207,10 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                         && !dictionary.ContainsKey(fieldName))
                     {
                         // Create new property mapping
-                        var providerField = CreateProviderField(field);
+                        var providerField = field.ValueType == IndexDocumentFieldValueType.Undefined ?
+                            CreateProviderField(field) :
+                            CreateProviderFieldByType(field);
+
                         ConfigureProperty(providerField, field);
                         properties.Add(fieldName, providerField);
                     }
@@ -226,6 +229,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
+        [Obsolete("Left for backwards compatability.")]
         protected virtual IProperty CreateProviderField(IndexDocumentField field)
         {
             var fieldType = field.Value?.GetType() ?? typeof(object);
@@ -274,6 +278,42 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
 
             throw new ArgumentException($"Field {field.Name} has unsupported type {fieldType}", nameof(field));
+        }
+
+        protected virtual IProperty CreateProviderFieldByType(IndexDocumentField field)
+        {
+            switch (field.ValueType)
+            {
+                case IndexDocumentFieldValueType.String when field.IsFilterable:
+                    return new KeywordProperty();
+                case IndexDocumentFieldValueType.String when !field.IsFilterable:
+                    return new TextProperty();
+                case IndexDocumentFieldValueType.Char:
+                case IndexDocumentFieldValueType.Guid:
+                    return new KeywordProperty();
+                case IndexDocumentFieldValueType.Complex:
+                    return new NestedProperty();
+                case IndexDocumentFieldValueType.Integer:
+                    return new NumberProperty(NumberType.Integer);
+                case IndexDocumentFieldValueType.Short:
+                    return new NumberProperty(NumberType.Short);
+                case IndexDocumentFieldValueType.Byte:
+                    return new NumberProperty(NumberType.Byte);
+                case IndexDocumentFieldValueType.Long:
+                    return new NumberProperty(NumberType.Long);
+                case IndexDocumentFieldValueType.Float:
+                    return new NumberProperty(NumberType.Float);
+                case IndexDocumentFieldValueType.Double:
+                    return new NumberProperty(NumberType.Double);
+                case IndexDocumentFieldValueType.DateTime:
+                    return new DateProperty();
+                case IndexDocumentFieldValueType.Boolean:
+                    return new BooleanProperty();
+                case IndexDocumentFieldValueType.GeoPoint:
+                    return new GeoPointProperty();
+                default:
+                    throw new ArgumentException($"Field {field.Name} has unsupported type {field.ValueType}", nameof(field));
+            }
         }
 
         protected virtual void ConfigureProperty(IProperty property, IndexDocumentField field)
