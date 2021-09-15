@@ -1,8 +1,10 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using VirtoCommerce.Platform.Core.Settings;
 
 namespace VirtoCommerce.ElasticSearchModule.Web
 {
+    [ExcludeFromCodeCoverage]
     public static class ModuleConstants
     {
         public static class Settings
