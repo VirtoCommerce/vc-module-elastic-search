@@ -2,12 +2,10 @@
 
 [![CI status](https://github.com/VirtoCommerce/vc-module-elastic-search/workflows/Module%20CI/badge.svg?branch=dev)](https://github.com/VirtoCommerce/vc-module-elastic-search/actions?query=workflow%3A"Module+CI") [![Quality gate](https://sonarcloud.io/api/project_badges/measure?project=VirtoCommerce_vc-module-elastic-search&metric=alert_status&branch=dev)](https://sonarcloud.io/dashboard?id=VirtoCommerce_vc-module-elastic-search) [![Reliability rating](https://sonarcloud.io/api/project_badges/measure?project=VirtoCommerce_vc-module-elastic-search&metric=reliability_rating&branch=dev)](https://sonarcloud.io/dashboard?id=VirtoCommerce_vc-module-elastic-search) [![Security rating](https://sonarcloud.io/api/project_badges/measure?project=VirtoCommerce_vc-module-elastic-search&metric=security_rating&branch=dev)](https://sonarcloud.io/dashboard?id=VirtoCommerce_vc-module-elastic-search) [![Sqale rating](https://sonarcloud.io/api/project_badges/measure?project=VirtoCommerce_vc-module-elastic-search&metric=sqale_rating&branch=dev)](https://sonarcloud.io/dashboard?id=VirtoCommerce_vc-module-elastic-search)
 
-VirtoCommerce.ElasticSearch module implements ISearchProvider defined in the VirtoCommerce.Core module and uses Elasticsearch engine which stores indexed documents on a standalone <a href="https://www.elastic.co/products/elasticsearch" target="_blank">Elasticsearch</a> or <a href="https://cloud.elastic.co" target="_blank">Elastic Cloud</a> server.
-
-# Version History
-## 1.1.0
-* Added support of <a href="https://cloud.elastic.co" target="_blank">Elastic Cloud</a> server, <a href="https://www.elastic.co/guide/en/cloud/current/getting-started.html">Getting started with Elastic Cloud</a>
-* Added HTTPS and basic authentication support for elasticsearch 
+VirtoCommerce.ElasticSearch module implements ISearchProvider defined in the VirtoCommerce.Core module and uses Elasticsearch engine which stores indexed documents on:
+* Standalone <a href="https://www.elastic.co/products/elasticsearch" target="_blank">Elasticsearch</a> 
+* <a href="https://cloud.elastic.co" target="_blank">Elastic Cloud</a> 
+* <a href="https://aws.amazon.com/opensearch-service/" target="_blank">Amazon OpenSearch Service</a> (successor to Amazon Elasticsearch Service).
 
 # Installation
 Installing the module:
@@ -28,7 +26,6 @@ For Elastic Cloud, the configuration string must have four parameters:
 provider=Elasticsearch;server=https://4fe3ad462de203c52b358ff2cc6fe9cc.europe-west1.gcp.cloud.es.io:9243;scope=default;key={SECRET_KEY}
 ```
 
-
 * **provider** should be **Elasticsearch**
 * **server** is a network address and port of the Elasticsearch server v5.x.
 * **scope** is a common name (prefix) of all indexes. Each document type is stored in a separate index. Full index name is `scope-documenttype`. One server can serve multiple indexes.
@@ -42,6 +39,11 @@ You can configure the search configuration string either in the VC Manager UI or
 <connectionStrings>
     <add name="SearchConnectionString" connectionString="provider=Elasticsearch;server=localhost:9200;scope=default" />
 </connectionStrings>
+```
+
+For Amazon OpenSearch Service, the configuration string must have these parameters:
+```
+provider=Elasticsearch;server=https://{master-user}:{master-user-password}@search-test-vc-c74km3tiav64fiimnisw3ghpd4.us-west-1.es.amazonaws.com;scope=default;
 ```
 
 # License
