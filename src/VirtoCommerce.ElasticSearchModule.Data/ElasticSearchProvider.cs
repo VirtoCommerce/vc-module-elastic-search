@@ -73,7 +73,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         /// <summary>
         /// This implementation supports blue-green indexation
         /// </summary>
-        public bool SwapIndexEnabled => true;
+        public bool IsIndexSwappingSupported => true;
 
         /// <summary>
         /// Swap active and backup indexes
