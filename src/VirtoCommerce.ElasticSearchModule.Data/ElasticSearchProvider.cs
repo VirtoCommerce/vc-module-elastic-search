@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Elasticsearch.Net;
 using Microsoft.Extensions.Options;
@@ -188,7 +189,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             {
                 if (reindex)
                 {
-                    var backupIndexName = GetIndexName(documentType, Guid.NewGuid().ToString("N"));
+                    var backupIndexName = GetIndexName(documentType, GetRandomIndexSuffix());
                     await CreateIndexAsync(backupIndexName, indexName);
                 }
                 else
@@ -549,9 +550,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return string.Join("-", _searchOptions.Scope, documentType).ToLowerInvariant();
         }
 
-        protected virtual string GetIndexName(string documentType, string postfix)
+        protected virtual string GetIndexName(string documentType, string suffix)
         {
-            return string.Join("-", _searchOptions.Scope, documentType, postfix).ToLowerInvariant();
+            return string.Join("-", _searchOptions.Scope, documentType, suffix).ToLowerInvariant();
         }
 
         /// <summary>
@@ -712,6 +713,19 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             server = server.TrimEnd('/');
             return new Uri(server);
+        }
+
+        private Regex _special = new Regex("[/+_=]", RegexOptions.Compiled);
+
+        /// <summary>
+        /// Gets random name suffix to attach to index (for automatic creation of backup indices)
+        /// </summary>
+        private string GetRandomIndexSuffix()
+        {
+            var result = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+            result = _special.Replace(result, string.Empty);
+
+            return result;
         }
     }
 }
