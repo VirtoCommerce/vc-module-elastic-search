@@ -34,6 +34,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         private readonly ElasticSearchOptions _elasticSearchOptions;
 
         private readonly ConcurrentDictionary<string, string> _activeIndexNames = new ConcurrentDictionary<string, string>();
+        private readonly Regex _specialSymbols = new Regex("[/+_=]", RegexOptions.Compiled);
 
         public ElasticSearchProvider(
             IOptions<ElasticSearchOptions> elasticSearchOptions,
@@ -715,15 +716,13 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return new Uri(server);
         }
 
-        private Regex _special = new Regex("[/+_=]", RegexOptions.Compiled);
-
         /// <summary>
         /// Gets random name suffix to attach to index (for automatic creation of backup indices)
         /// </summary>
         private string GetRandomIndexSuffix()
         {
             var result = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
-            result = _special.Replace(result, string.Empty);
+            result = _specialSymbols.Replace(result, string.Empty);
 
             return result;
         }
