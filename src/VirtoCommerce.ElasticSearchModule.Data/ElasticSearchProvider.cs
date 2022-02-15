@@ -89,7 +89,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
         }
 
-        public virtual async Task<IndexingResult> IndexAsync(string documentType, IList<IndexDocument> documents)
+        public virtual async Task<IndexingResult> IndexAsync(string documentType, IList<IndexDocument> documents, bool update = false)
         {
             var indexName = GetIndexName(documentType);
             var providerFields = await GetMappingAsync(indexName);
@@ -109,7 +109,15 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
 
             var bulkDefinition = new BulkDescriptor();
-            bulkDefinition.IndexMany(providerDocuments).Index(indexName);
+
+            if (update)
+            {
+                bulkDefinition.UpdateMany(providerDocuments, (descriptor, document) => descriptor.Doc(document)).Index(indexName);
+            }
+            else
+            {
+                bulkDefinition.IndexMany(providerDocuments).Index(indexName);
+            }
 
             var bulkResponse = await Client.BulkAsync(bulkDefinition);
             await Client.Indices.RefreshAsync(indexName);
