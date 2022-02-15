@@ -21,7 +21,7 @@
   <assemblyFile>VirtoCommerce.ElasticSearchModule.Web.dll</assemblyFile>
   <moduleType>VirtoCommerce.ElasticSearchModule.Web.Module, VirtoCommerce.ElasticSearchModule.Web</moduleType>
   <dependencies>
-    <dependency id="VirtoCommerce.Search" version="3.201.0-beta.1" />
+    <dependency id="VirtoCommerce.Search" version="3.201.0" />
   </dependencies>
   <groups>
     <group>commerce</group>
