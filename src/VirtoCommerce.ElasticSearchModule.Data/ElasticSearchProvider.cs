@@ -173,22 +173,22 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
         }
 
-        public virtual async Task<IndexingResult> IndexAsync(string documentType, IList<IndexDocument> documents, bool partialUpdate = false, bool reindex = false)
+        public virtual async Task<IndexingResult> IndexAsync(string documentType, IList<IndexDocument> documents, IndexingParameters parameters)
         {
             // use backup index in case of reindexing
-            var indexName = reindex
+            var indexName = parameters.Reindex
                 ? GetIndexAlias(BackupIndexAlias, documentType)
                 : await GetActiveIndexNameAsync(documentType);
 
             var providerFields = await GetMappingAsync(indexName);
             var oldFieldsCount = providerFields.Count();
             var providerDocuments = documents.Select(document => ConvertToProviderDocument(document, providerFields)).ToList();
-            var updateMapping = !partialUpdate && providerFields.Count() != oldFieldsCount;
+            var updateMapping = !parameters.PartialUpdate && providerFields.Count() != oldFieldsCount;
             var indexExists = await IndexExistsAsync(indexName);
 
             if (!indexExists)
             {
-                if (reindex)
+                if (parameters.Reindex)
                 {
                     var backupIndexName = GetIndexName(documentType, GetRandomIndexSuffix());
                     await CreateIndexAsync(backupIndexName, indexName);
@@ -206,7 +206,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             var bulkDefinition = new BulkDescriptor();
 
-            if (partialUpdate)
+            if (parameters.PartialUpdate)
             {
                 bulkDefinition.UpdateMany(providerDocuments, (descriptor, document) => descriptor.Doc(document)).Index(indexName);
             }
