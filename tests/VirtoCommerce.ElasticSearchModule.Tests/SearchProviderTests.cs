@@ -23,7 +23,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             // Create index and add documents
             var primaryDocuments = GetPrimaryDocuments();
             
-            var response = await provider.IndexAsync(DocumentType, primaryDocuments);
+            var response = await provider.IndexAsync(DocumentType, primaryDocuments, new IndexingParameters());
 
             Assert.NotNull(response);
             Assert.NotNull(response.Items);
@@ -33,7 +33,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
 
             // Update index with new fields and add more documents
             var secondaryDocuments = GetSecondaryDocuments();
-            response = await provider.IndexAsync(DocumentType, secondaryDocuments);
+            response = await provider.IndexAsync(DocumentType, secondaryDocuments, new IndexingParameters());
 
             Assert.NotNull(response);
             Assert.NotNull(response.Items);
