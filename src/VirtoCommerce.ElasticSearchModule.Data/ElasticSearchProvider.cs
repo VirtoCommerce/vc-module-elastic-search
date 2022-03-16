@@ -136,14 +136,14 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         public virtual async Task<IndexingResult> IndexWithBackupAsync(string documentType, IList<IndexDocument> documents)
         {
-            var result = await InternalIndexAsync(documentType, documents, new IndexationParameters { Reindex = true });
+            var result = await InternalIndexAsync(documentType, documents, new IndexingParameters { Reindex = true });
 
             return result;
         }
 
         public virtual async Task<IndexingResult> IndexPartialAsync(string documentType, IList<IndexDocument> documents)
         {
-            var result = await InternalIndexAsync(documentType, documents, new IndexationParameters { PartialUpdate = true });
+            var result = await InternalIndexAsync(documentType, documents, new IndexingParameters { PartialUpdate = true });
 
             return result;
         }
@@ -184,7 +184,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         public virtual async Task<IndexingResult> IndexAsync(string documentType, IList<IndexDocument> documents)
         {
-            var result = await InternalIndexAsync(documentType, documents, new IndexationParameters());
+            var result = await InternalIndexAsync(documentType, documents, new IndexingParameters());
 
             return result;
         }
@@ -262,7 +262,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return name;
         }
 
-        protected virtual async Task<IndexingResult> InternalIndexAsync(string documentType, IList<IndexDocument> documents, IndexationParameters parameters)
+        protected virtual async Task<IndexingResult> InternalIndexAsync(string documentType, IList<IndexDocument> documents, IndexingParameters parameters)
         {
             // use backup index in case of reindexing
             var indexName = parameters.Reindex
