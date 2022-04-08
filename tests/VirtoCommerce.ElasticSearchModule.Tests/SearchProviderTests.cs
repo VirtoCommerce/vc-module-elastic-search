@@ -1,6 +1,5 @@
 using System.Linq;
 using System.Threading.Tasks;
-using VirtoCommerce.ElasticSearchModule.Data;
 using VirtoCommerce.SearchModule.Core.Model;
 using Xunit;
 
@@ -22,8 +21,8 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
 
             // Create index and add documents
             var primaryDocuments = GetPrimaryDocuments();
-            
-            var response = await provider.IndexAsync(DocumentType, primaryDocuments, new IndexingParameters());
+
+            var response = await provider.IndexAsync(DocumentType, primaryDocuments);
 
             Assert.NotNull(response);
             Assert.NotNull(response.Items);
@@ -33,7 +32,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
 
             // Update index with new fields and add more documents
             var secondaryDocuments = GetSecondaryDocuments();
-            response = await provider.IndexAsync(DocumentType, secondaryDocuments, new IndexingParameters());
+            response = await provider.IndexAsync(DocumentType, secondaryDocuments);
 
             Assert.NotNull(response);
             Assert.NotNull(response.Items);
