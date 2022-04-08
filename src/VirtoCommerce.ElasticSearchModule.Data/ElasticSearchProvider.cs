@@ -18,7 +18,7 @@ using SearchRequest = VirtoCommerce.SearchModule.Core.Model.SearchRequest;
 
 namespace VirtoCommerce.ElasticSearchModule.Data
 {
-    public class ElasticSearchProvider : ISearchProvider
+    public class ElasticSearchProvider : ISearchProvider, ISupportIndexSwap, ISupportPartialUpdate
     {
         // prefixes for index aliases
         public const string ActiveIndexAlias = "active";
@@ -73,14 +73,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected Uri ServerUrl { get; }
 
         /// <summary>
-        /// This implementation supports blue-green indexation
-        /// </summary>
-        public bool IsIndexSwappingSupported => true;
-
-        /// <summary>
         /// Swap active and backup indexes
         /// </summary>
-        public async Task SwapIndexAsync(string documentType)
+        public virtual async Task SwapIndexAsync(string documentType)
         {
             if (string.IsNullOrEmpty(documentType))
             {
@@ -139,6 +134,20 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
         }
 
+        public virtual async Task<IndexingResult> IndexWithBackupAsync(string documentType, IList<IndexDocument> documents)
+        {
+            var result = await InternalIndexAsync(documentType, documents, new IndexingParameters { Reindex = true });
+
+            return result;
+        }
+
+        public virtual async Task<IndexingResult> IndexPartialAsync(string documentType, IList<IndexDocument> documents)
+        {
+            var result = await InternalIndexAsync(documentType, documents, new IndexingParameters { PartialUpdate = true });
+
+            return result;
+        }
+
         /// <summary>
         /// Delete backup index
         /// </summary>
@@ -173,60 +182,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
         }
 
-        public virtual async Task<IndexingResult> IndexAsync(string documentType, IList<IndexDocument> documents, IndexingParameters parameters)
+        public virtual async Task<IndexingResult> IndexAsync(string documentType, IList<IndexDocument> documents)
         {
-            // use backup index in case of reindexing
-            var indexName = parameters.Reindex
-                ? GetIndexAlias(BackupIndexAlias, documentType)
-                : await GetActiveIndexNameAsync(documentType);
-
-            var providerFields = await GetMappingAsync(indexName);
-            var oldFieldsCount = providerFields.Count();
-            var providerDocuments = documents.Select(document => ConvertToProviderDocument(document, providerFields)).ToList();
-            var updateMapping = !parameters.PartialUpdate && providerFields.Count() != oldFieldsCount;
-            var indexExists = await IndexExistsAsync(indexName);
-
-            if (!indexExists)
-            {
-                if (parameters.Reindex)
-                {
-                    var backupIndexName = GetIndexName(documentType, GetRandomIndexSuffix());
-                    await CreateIndexAsync(backupIndexName, indexName);
-                }
-                else
-                {
-                    await CreateIndexAsync(indexName);
-                }
-            }
-
-            if (!indexExists || updateMapping)
-            {
-                await UpdateMappingAsync(indexName, providerFields);
-            }
-
-            var bulkDefinition = new BulkDescriptor();
-
-            if (parameters.PartialUpdate)
-            {
-                bulkDefinition.UpdateMany(providerDocuments, (descriptor, document) => descriptor.Doc(document)).Index(indexName);
-            }
-            else
-            {
-                bulkDefinition.IndexMany(providerDocuments).Index(indexName);
-            }
-
-            var bulkResponse = await Client.BulkAsync(bulkDefinition);
-            await Client.Indices.RefreshAsync(indexName);
-
-            var result = new IndexingResult
-            {
-                Items = bulkResponse.Items.Select(i => new IndexingResultItem
-                {
-                    Id = i.Id,
-                    Succeeded = i.IsValid,
-                    ErrorMessage = i.Error?.Reason
-                }).ToArray()
-            };
+            var result = await InternalIndexAsync(documentType, documents, new IndexingParameters());
 
             return result;
         }
@@ -302,6 +260,64 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
 
             return name;
+        }
+
+        protected virtual async Task<IndexingResult> InternalIndexAsync(string documentType, IList<IndexDocument> documents, IndexingParameters parameters)
+        {
+            // use backup index in case of reindexing
+            var indexName = parameters.Reindex
+                ? GetIndexAlias(BackupIndexAlias, documentType)
+                : await GetActiveIndexNameAsync(documentType);
+
+            var providerFields = await GetMappingAsync(indexName);
+            var oldFieldsCount = providerFields.Count();
+            var providerDocuments = documents.Select(document => ConvertToProviderDocument(document, providerFields)).ToList();
+            var updateMapping = !parameters.PartialUpdate && providerFields.Count() != oldFieldsCount;
+            var indexExists = await IndexExistsAsync(indexName);
+
+            if (!indexExists)
+            {
+                if (parameters.Reindex)
+                {
+                    var backupIndexName = GetIndexName(documentType, GetRandomIndexSuffix());
+                    await CreateIndexAsync(backupIndexName, indexName);
+                }
+                else
+                {
+                    await CreateIndexAsync(indexName);
+                }
+            }
+
+            if (!indexExists || updateMapping)
+            {
+                await UpdateMappingAsync(indexName, providerFields);
+            }
+
+            var bulkDefinition = new BulkDescriptor();
+
+            if (parameters.PartialUpdate)
+            {
+                bulkDefinition.UpdateMany(providerDocuments, (descriptor, document) => descriptor.Doc(document)).Index(indexName);
+            }
+            else
+            {
+                bulkDefinition.IndexMany(providerDocuments).Index(indexName);
+            }
+
+            var bulkResponse = await Client.BulkAsync(bulkDefinition);
+            await Client.Indices.RefreshAsync(indexName);
+
+            var result = new IndexingResult
+            {
+                Items = bulkResponse.Items.Select(i => new IndexingResultItem
+                {
+                    Id = i.Id,
+                    Succeeded = i.IsValid,
+                    ErrorMessage = i.Error?.Reason
+                }).ToArray()
+            };
+
+            return result;
         }
 
         protected virtual SearchDocument ConvertToProviderDocument(IndexDocument document, Properties<IProperties> properties)
