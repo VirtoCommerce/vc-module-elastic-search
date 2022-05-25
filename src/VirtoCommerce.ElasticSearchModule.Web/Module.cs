@@ -18,11 +18,18 @@ namespace VirtoCommerce.ElasticSearchModule.Web
         public ManifestModuleInfo ModuleInfo { get; set; }
         public IConfiguration Configuration { get; set; }
 
+        private bool IsElasticEnabled
+        {
+            get
+            {
+                var provider = Configuration.GetValue<string>("Search:Provider");
+                return provider.EqualsInvariant("ElasticSearch");
+            }
+        }
+
         public void Initialize(IServiceCollection serviceCollection)
         {
-            var provider = Configuration.GetValue<string>("Search:Provider");
-
-            if (provider.EqualsInvariant("ElasticSearch"))
+            if (IsElasticEnabled)
             {
                 serviceCollection.Configure<ElasticSearchOptions>(Configuration.GetSection("Search:ElasticSearch"));
                 serviceCollection.AddSingleton<ISearchProvider, ElasticSearchProvider>();
@@ -34,15 +41,18 @@ namespace VirtoCommerce.ElasticSearchModule.Web
             var settingsRegistrar = appBuilder.ApplicationServices.GetRequiredService<ISettingsRegistrar>();
             settingsRegistrar.RegisterSettings(ModuleConstants.Settings.AllSettings, ModuleInfo.Id);
 
-            var documentConfigs = appBuilder.ApplicationServices.GetRequiredService<IEnumerable<IndexDocumentConfiguration>>();
-            var documentTypes = documentConfigs.Select(c => c.DocumentType).Distinct().ToList();
+            if (IsElasticEnabled)
+            {
+                var documentConfigs = appBuilder.ApplicationServices.GetRequiredService<IEnumerable<IndexDocumentConfiguration>>();
+                var documentTypes = documentConfigs.Select(c => c.DocumentType).Distinct().ToList();
 
-            var settingsManager = appBuilder.ApplicationServices.GetRequiredService<ISettingsManager>();
-            var searchOptions = appBuilder.ApplicationServices.GetRequiredService<IOptions<SearchOptions>>();
-            var elasticSearchOptions = appBuilder.ApplicationServices.GetRequiredService<IOptions<ElasticSearchOptions>>();
+                var settingsManager = appBuilder.ApplicationServices.GetRequiredService<ISettingsManager>();
+                var searchOptions = appBuilder.ApplicationServices.GetRequiredService<IOptions<SearchOptions>>();
+                var elasticSearchOptions = appBuilder.ApplicationServices.GetRequiredService<IOptions<ElasticSearchOptions>>();
 
-            var provider = new ElasticSearchProvider(elasticSearchOptions, searchOptions, settingsManager);
-            provider.AddActiveAlias(documentTypes);
+                var provider = new ElasticSearchProvider(elasticSearchOptions, searchOptions, settingsManager);
+                provider.AddActiveAlias(documentTypes);
+            }
         }
 
         public void Uninstall()
