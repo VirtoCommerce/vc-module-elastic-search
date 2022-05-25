@@ -33,7 +33,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         private readonly SearchOptions _searchOptions;
         private readonly ElasticSearchOptions _elasticSearchOptions;
 
-        private readonly ConcurrentDictionary<string, string> _activeIndexNames = new ConcurrentDictionary<string, string>();
         private readonly Regex _specialSymbols = new Regex("[/+_=]", RegexOptions.Compiled);
 
         public ElasticSearchProvider(
@@ -104,14 +103,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                         await Client.Indices.PutAliasAsync(indexName, activeIndexAlias);
                     }
 
-                    if (_activeIndexNames.ContainsKey(documentType))
-                    {
-                        _activeIndexNames[documentType] = activeIndexAlias;
-                    }
-                    else
-                    {
-                        _activeIndexNames.TryAdd(documentType, activeIndexAlias);
-                    }
                 }
 
                 var activeIndexResponse = await Client.Indices.GetAliasAsync(activeIndexAlias);
@@ -192,7 +183,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         public virtual async Task<IndexingResult> RemoveAsync(string documentType, IList<IndexDocument> documents)
         {
             var providerDocuments = documents.Select(d => new SearchDocument { Id = d.Id }).ToArray();
-            var indexName = await GetActiveIndexNameAsync(documentType);
+            var indexName = GetIndexAlias(ActiveIndexAlias, documentType);
             var bulkDefinition = new BulkDescriptor();
             bulkDefinition.DeleteMany(providerDocuments).Index(indexName);
 
@@ -214,9 +205,10 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         public virtual async Task<SearchResponse> SearchAsync(string documentType, SearchRequest request)
         {
-            var indexName = request.UseBackupIndex ?
-                GetIndexAlias(BackupIndexAlias, documentType) :
-                await GetActiveIndexNameAsync(documentType);
+            var alias = request.UseBackupIndex
+                ? BackupIndexAlias
+                : ActiveIndexAlias;
+            var indexName = GetIndexAlias(alias, documentType);
 
             ISearchResponse<SearchDocument> providerResponse;
 
@@ -241,33 +233,33 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         }
 
         /// <summary>
-        /// In case of index alias not being assigned to any index (blue-green indexation havent been run before) we need to detect a real index name.
+        /// Puts an active alias on a default index (if exists)
         /// </summary>
-        private async Task<string> GetActiveIndexNameAsync(string documentType)
+        public void AddActiveAlias(IEnumerable<string> documentTypes)
         {
-            var name = _activeIndexNames.ContainsKey(documentType) ? _activeIndexNames[documentType] : null;
-            if (name == null)
+            foreach (var documentType in documentTypes)
             {
-                name = GetIndexAlias(ActiveIndexAlias, documentType);
-
-                var indexExists = await IndexExistsAsync(name);
-                if (!indexExists)
+                var indexAlias = GetIndexAlias(ActiveIndexAlias, documentType);
+                if (IndexExists(indexAlias))
                 {
-                    name = GetIndexName(documentType);
+                    continue;
                 }
 
-                _activeIndexNames.TryAdd(documentType, name);
+                var indexName = GetIndexName(documentType);
+                if (IndexExists(indexName))
+                {
+                    Client.Indices.PutAlias(indexName, indexAlias);
+                }
             }
-
-            return name;
         }
 
         protected virtual async Task<IndexingResult> InternalIndexAsync(string documentType, IList<IndexDocument> documents, IndexingParameters parameters)
         {
             // use backup index in case of reindexing
-            var indexName = parameters.Reindex
-                ? GetIndexAlias(BackupIndexAlias, documentType)
-                : await GetActiveIndexNameAsync(documentType);
+            var alias = parameters.Reindex
+                ? BackupIndexAlias
+                : ActiveIndexAlias;
+            var indexName = GetIndexAlias(alias, documentType);
 
             var providerFields = await GetMappingAsync(indexName);
             var oldFieldsCount = providerFields.Count();
@@ -277,15 +269,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             if (!indexExists)
             {
-                if (parameters.Reindex)
-                {
-                    var backupIndexName = GetIndexName(documentType, GetRandomIndexSuffix());
-                    await CreateIndexAsync(backupIndexName, indexName);
-                }
-                else
-                {
-                    await CreateIndexAsync(indexName);
-                }
+                var newIndexName = GetIndexName(documentType, GetRandomIndexSuffix());
+                await CreateIndexAsync(newIndexName, alias: indexName);
             }
 
             if (!indexExists || updateMapping)
@@ -591,6 +576,12 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected virtual async Task<bool> IndexExistsAsync(string indexName)
         {
             var response = await Client.Indices.ExistsAsync(indexName);
+            return response.Exists;
+        }
+
+        protected virtual bool IndexExists(string indexName)
+        {
+            var response = Client.Indices.Exists(indexName);
             return response.Exists;
         }
 
