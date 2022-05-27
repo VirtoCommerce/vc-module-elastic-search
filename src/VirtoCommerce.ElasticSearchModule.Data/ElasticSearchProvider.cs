@@ -490,10 +490,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             {
                 textProperty.Index = field.IsSearchable;
                 textProperty.Analyzer = field.IsSearchable ? SearchableFieldAnalyzerName : null;
-                textProperty.Fields = new Properties
-                {
-                    { "keyword", new KeywordProperty() { Normalizer = "case_insensitive" } }
-                };
             }
         }
 
