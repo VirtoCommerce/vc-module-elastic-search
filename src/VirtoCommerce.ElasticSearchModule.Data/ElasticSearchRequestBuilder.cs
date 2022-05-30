@@ -111,7 +111,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     Field = ElasticSearchHelper.ToElasticFieldName(field.FieldName),
                     Order = field.IsDescending ? SortOrder.Descending : SortOrder.Ascending,
                     Missing = "_last",
-                    UnmappedType = FieldType.Long,
+                    UnmappedType = FieldType.Long
                 };
             }
 
