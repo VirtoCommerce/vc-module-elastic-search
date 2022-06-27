@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Nest;
@@ -326,7 +327,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     }
                     else if (rangeAggregationRequest != null)
                     {
-                        AddRangeAggregationRequest(result, aggregationId, fieldName, rangeAggregationRequest.Values);
+                        AddRangeAggregationRequest(result, aggregationId, fieldName, filter, rangeAggregationRequest.Values);
                     }
                 }
             }
@@ -374,6 +375,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
         }
 
+        [Obsolete("Use AddRangeAggregationRequest(Dictionary<string, AggregationContainer> container, string aggregationId, string fieldName, QueryContainer filter, IEnumerable<RangeAggregationRequestValue> values)")]
         protected virtual void AddRangeAggregationRequest(Dictionary<string, AggregationContainer> container, string aggregationId, string fieldName, IEnumerable<RangeAggregationRequestValue> values)
         {
             if (values == null)
@@ -389,6 +391,28 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     Filter = new BoolQuery
                     {
                         Must = new List<QueryContainer> { query }
+                    }
+                };
+
+                container.Add(aggregationValueId, filterAggregation);
+            }
+        }
+
+        protected virtual void AddRangeAggregationRequest(Dictionary<string, AggregationContainer> container, string aggregationId, string fieldName, QueryContainer filter, IEnumerable<RangeAggregationRequestValue> values)
+        {
+            if (values == null)
+                return;
+
+            foreach (var value in values)
+            {
+                var aggregationValueId = $"{aggregationId}-{value.Id}";
+                var query = CreateTermRangeQuery(fieldName, value.Lower, value.Upper, value.IncludeLower, value.IncludeUpper);
+
+                var filterAggregation = new FilterAggregation(aggregationValueId)
+                {
+                    Filter = new BoolQuery
+                    {
+                        Must = new List<QueryContainer> { query, filter }
                     }
                 };
 
