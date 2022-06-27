@@ -375,7 +375,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
         }
 
-        [Obsolete("Use AddRangeAggregationRequest(Dictionary<string, AggregationContainer> container, string aggregationId, string fieldName, QueryContainer filter, IEnumerable<RangeAggregationRequestValue> values)")]
+        [Obsolete("Use AddRangeAggregationRequest(Dictionary<string, AggregationContainer> container, string aggregationId, string fieldName, QueryContainer filter, IEnumerable<RangeAggregationRequestValue> values). Should be removed in Stable v.3")]
         protected virtual void AddRangeAggregationRequest(Dictionary<string, AggregationContainer> container, string aggregationId, string fieldName, IEnumerable<RangeAggregationRequestValue> values)
         {
             if (values == null)
