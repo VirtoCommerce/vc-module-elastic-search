@@ -401,7 +401,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected virtual void AddRangeAggregationRequest(Dictionary<string, AggregationContainer> container, string aggregationId, string fieldName, QueryContainer filter, IEnumerable<RangeAggregationRequestValue> values)
         {
             if (values == null)
+            {
                 return;
+            }
 
             foreach (var value in values)
             {
