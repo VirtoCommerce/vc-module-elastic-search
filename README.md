@@ -18,6 +18,23 @@ Azure Search provider are configurable by these configuration keys:
 
 [Read more about configuration here](https://virtocommerce.com/docs/user-guide/configuration-settings/)
 
+For Elasticsearch provider v8.x the configuration string must have seven parameters:
+[Read more here](https://www.elastic.co/guide/en/elasticsearch/reference/8.1/configuring-stack-security.html)
+
+```json
+    "Search":{
+        "Provider": "ElasticSearch",
+        "Scope": "default",
+        "ElasticSearch": {
+            "Server": "https://localhost:9200",
+            "UserName": "elastic",
+            "Password": "{SECRET_KEY}",
+            "EnableCompatibilityMode": "true",
+            "CertificateFingerprint": "{CERTIFICATE_FINGERPRINT}"
+         }
+    }
+```
+
 For Elasticsearch provider the configuration string must have three parameters:
 ```json
     "Search":{
@@ -36,7 +53,7 @@ For Elastic Cloud, the configuration string must have four parameters:
         "Scope": "default",
         "ElasticSearch": {
             "Server": "https://4fe3ad462de203c52b358ff2cc6fe9cc.europe-west1.gcp.cloud.es.io:9243",
-            "Key": "{SECRET_KEY}",
+            "Password": "{SECRET_KEY}",
          }
     }
 ```
