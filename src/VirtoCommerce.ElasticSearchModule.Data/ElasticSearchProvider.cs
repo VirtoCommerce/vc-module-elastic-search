@@ -698,22 +698,18 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var pool = new SingleNodeConnectionPool(serverUrl);
             var connectionSettings = new ConnectionSettings(pool, sourceSerializer: JsonNetSerializer.Default);
 
-            if (!string.IsNullOrEmpty(userName) && !string.IsNullOrEmpty(password))
-            {
-                connectionSettings.BasicAuthentication(userName, password);
-            }
-            else if (!string.IsNullOrEmpty(password))
+            if (!string.IsNullOrEmpty(password))
             {
                 // elastic is default name for elastic cloud
-                connectionSettings.BasicAuthentication("elastic", password);
+                connectionSettings.BasicAuthentication(userName ?? "elastic", password);
             }
 
-            if (options.EnableHttpCompression)
+            if (options.EnableHttpCompression.HasValue && (bool)options.EnableHttpCompression)
             {
                 connectionSettings.EnableHttpCompression();
             }
 
-            if (options.EnableCompatibilityMode)
+            if (options.EnableCompatibilityMode.HasValue && (bool)options.EnableCompatibilityMode)
             {
                 connectionSettings.EnableApiVersioningHeader();
             }
