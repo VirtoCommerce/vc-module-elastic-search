@@ -693,8 +693,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected static IConnectionSettingsValues GetConnectionSettings(ElasticSearchOptions options)
         {
             var serverUrl = GetServerUrl(options);
-            var userName = options.UserName;
-            var password = options.Password;
+            var userName = options.User;
+            var password = options.Key;
             var pool = new SingleNodeConnectionPool(serverUrl);
             var connectionSettings = new ConnectionSettings(pool, sourceSerializer: JsonNetSerializer.Default);
 
@@ -708,12 +708,12 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 connectionSettings.BasicAuthentication("elastic", password);
             }
 
-            if (options.EnableHttpCompression.EqualsInvariant("true"))
+            if (options.EnableHttpCompression)
             {
                 connectionSettings.EnableHttpCompression();
             }
 
-            if (options.EnableCompatibilityMode.EqualsInvariant("true"))
+            if (options.EnableCompatibilityMode)
             {
                 connectionSettings.EnableApiVersioningHeader();
             }
