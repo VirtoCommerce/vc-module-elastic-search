@@ -693,24 +693,30 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected static IConnectionSettingsValues GetConnectionSettings(ElasticSearchOptions options)
         {
             var serverUrl = GetServerUrl(options);
-            var accessUser = options.User;
-            var accessKey = options.Key;
+            var userName = options.User;
+            var password = options.Key;
             var pool = new SingleNodeConnectionPool(serverUrl);
             var connectionSettings = new ConnectionSettings(pool, sourceSerializer: JsonNetSerializer.Default);
 
-            if (!string.IsNullOrEmpty(accessUser) && !string.IsNullOrEmpty(accessKey))
-            {
-                connectionSettings.BasicAuthentication(accessUser, accessKey);
-            }
-            else if (!string.IsNullOrEmpty(accessKey))
+            if (!string.IsNullOrEmpty(password))
             {
                 // elastic is default name for elastic cloud
-                connectionSettings.BasicAuthentication("elastic", accessKey);
+                connectionSettings.BasicAuthentication(userName ?? "elastic", password);
             }
 
-            if (options.EnableHttpCompression.EqualsInvariant("true"))
+            if (options.EnableHttpCompression.HasValue && (bool)options.EnableHttpCompression)
             {
                 connectionSettings.EnableHttpCompression();
+            }
+
+            if (options.EnableCompatibilityMode.HasValue && (bool)options.EnableCompatibilityMode)
+            {
+                connectionSettings.EnableApiVersioningHeader();
+            }
+
+            if (!string.IsNullOrEmpty(options.CertificateFingerprint))
+            {
+                connectionSettings.CertificateFingerprint(options.CertificateFingerprint);
             }
 
             return connectionSettings;

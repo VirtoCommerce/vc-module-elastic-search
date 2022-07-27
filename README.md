@@ -18,6 +18,24 @@ Azure Search provider are configurable by these configuration keys:
 
 [Read more about configuration here](https://virtocommerce.com/docs/user-guide/configuration-settings/)
 
+For Elasticsearch provider v8.x the configuration string must have seven parameters:
+Add additional fields **EnableCompatibilityMode** with **true** value for using Elasticsearch v8.x or **false** for earlier version and **CertificateFingerprint** for certificate fingerprint.
+[Read more here](https://www.elastic.co/guide/en/elasticsearch/reference/8.1/configuring-stack-security.html)
+
+```json
+    "Search":{
+        "Provider": "ElasticSearch",
+        "Scope": "default",
+        "ElasticSearch": {
+            "Server": "https://localhost:9200",
+            "User": "elastic",
+            "Key": "{SECRET_KEY}",
+            "EnableCompatibilityMode": "true",
+            "CertificateFingerprint": "{CERTIFICATE_FINGERPRINT}"
+         }
+    }
+```
+
 For Elasticsearch provider the configuration string must have three parameters:
 ```json
     "Search":{
