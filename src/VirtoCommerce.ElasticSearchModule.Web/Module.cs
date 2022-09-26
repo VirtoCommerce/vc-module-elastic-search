@@ -32,7 +32,8 @@ namespace VirtoCommerce.ElasticSearchModule.Web
             if (IsElasticEnabled)
             {
                 serviceCollection.Configure<ElasticSearchOptions>(Configuration.GetSection("Search:ElasticSearch"));
-                serviceCollection.AddSingleton<ISearchProvider, ElasticSearchProvider>();
+                serviceCollection.AddTransient<ElasticSearchRequestBuilder>();
+                serviceCollection.AddSingleton<ISearchProvider, ElasticSearchProvider>();                
             }
         }
 
@@ -46,12 +47,8 @@ namespace VirtoCommerce.ElasticSearchModule.Web
                 var documentConfigs = appBuilder.ApplicationServices.GetRequiredService<IEnumerable<IndexDocumentConfiguration>>();
                 var documentTypes = documentConfigs.Select(c => c.DocumentType).Distinct().ToList();
 
-                var settingsManager = appBuilder.ApplicationServices.GetRequiredService<ISettingsManager>();
-                var searchOptions = appBuilder.ApplicationServices.GetRequiredService<IOptions<SearchOptions>>();
-                var elasticSearchOptions = appBuilder.ApplicationServices.GetRequiredService<IOptions<ElasticSearchOptions>>();
-
-                var provider = new ElasticSearchProvider(elasticSearchOptions, searchOptions, settingsManager);
-                provider.AddActiveAlias(documentTypes);
+                var provider = appBuilder.ApplicationServices.GetRequiredService<ISearchProvider>();
+                ((ElasticSearchProvider)provider).AddActiveAlias(documentTypes);
             }
         }
 

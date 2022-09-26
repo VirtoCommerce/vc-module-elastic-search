@@ -18,7 +18,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             var elasticOptions = Options.Create(new ElasticSearchOptions {  Server = host });
             var searchOptions = Options.Create(new SearchOptions { Scope = "test-core", Provider = "ElasticSearch" });
 
-            var provider = new ElasticSearchProvider(elasticOptions, searchOptions, GetSettingsManager());
+            var provider = new ElasticSearchProvider(elasticOptions, searchOptions, GetSettingsManager(), new ElasticSearchRequestBuilder());
             return provider;
         }
     }

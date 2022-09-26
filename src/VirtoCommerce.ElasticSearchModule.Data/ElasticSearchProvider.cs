@@ -27,8 +27,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         public const string SearchableFieldAnalyzerName = "searchable_field_analyzer";
         public const string NGramFilterName = "custom_ngram";
         public const string EdgeNGramFilterName = "custom_edge_ngram";
-
-        private readonly ISettingsManager _settingsManager;
+        
         private readonly ConcurrentDictionary<string, Properties<IProperties>> _mappings = new ConcurrentDictionary<string, Properties<IProperties>>();
         private readonly SearchOptions _searchOptions;
         private readonly ElasticSearchOptions _elasticSearchOptions;
@@ -36,22 +35,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         private readonly Regex _specialSymbols = new Regex("[/+_=]", RegexOptions.Compiled);
 
         public ElasticSearchProvider(
-            IOptions<ElasticSearchOptions> elasticSearchOptions,
-            IOptions<SearchOptions> searchOptions,
-            ISettingsManager settingsManager)
-            : this(elasticSearchOptions, searchOptions, settingsManager, new ElasticClient(GetConnectionSettings(elasticSearchOptions.Value)))
-        {
-        }
-
-        public ElasticSearchProvider(IOptions<ElasticSearchOptions> elasticSearchOptions,
-            IOptions<SearchOptions> searchOptions, ISettingsManager settingsManager, IElasticClient client)
-            : this(elasticSearchOptions, searchOptions, settingsManager, client, new ElasticSearchRequestBuilder())
-        {
-        }
-
-        public ElasticSearchProvider(
             IOptions<ElasticSearchOptions> elasticSearchOptions, IOptions<SearchOptions> searchOptions,
-            ISettingsManager settingsManager, IElasticClient client, ElasticSearchRequestBuilder requestBuilder)
+            ISettingsManager settingsManager, ElasticSearchRequestBuilder requestBuilder)
         {
             if (searchOptions == null)
                 throw new ArgumentNullException(nameof(searchOptions));
@@ -59,10 +44,10 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             if (elasticSearchOptions == null)
                 throw new ArgumentNullException(nameof(elasticSearchOptions));
 
-            _settingsManager = settingsManager;
-            Client = client;
+            SettingsManager = settingsManager;
+            Client = new ElasticClient(GetConnectionSettings(elasticSearchOptions.Value));
             RequestBuilder = requestBuilder;
-            ServerUrl = client.ConnectionSettings.ConnectionPool.Nodes.First().Uri;
+            ServerUrl = Client.ConnectionSettings.ConnectionPool.Nodes.First().Uri;
             _elasticSearchOptions = elasticSearchOptions.Value;
             _searchOptions = searchOptions.Value;
         }
@@ -70,6 +55,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected IElasticClient Client { get; }
         protected ElasticSearchRequestBuilder RequestBuilder { get; }
         protected Uri ServerUrl { get; }
+        protected ISettingsManager SettingsManager { get; }
 
         /// <summary>
         /// Swap active and backup indexes
@@ -110,14 +96,20 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
                 // get backup index and alias
                 var backupIndexAlias = GetIndexAlias(BackupIndexAlias, documentType);
-                var backupIndexResponse = await Client.Indices.GetAliasAsync(backupIndexAlias);
-                var backupIndexName = backupIndexResponse.Indices.FirstOrDefault().Key;
-
                 // swap
                 await Client.Indices.DeleteAliasAsync(activeIndexName, activeIndexAlias);
-                await Client.Indices.DeleteAliasAsync(backupIndexName, backupIndexAlias);
-                await Client.Indices.PutAliasAsync(backupIndexName, activeIndexAlias);
+
+                if (await IndexExistsAsync(backupIndexAlias))
+                {
+                    var backupIndexResponse = await Client.Indices.GetAliasAsync(backupIndexAlias);
+                    var backupIndexName = backupIndexResponse.Indices.FirstOrDefault().Key;
+
+                    await Client.Indices.DeleteAliasAsync(backupIndexName, backupIndexAlias);
+                    await Client.Indices.PutAliasAsync(backupIndexName, activeIndexAlias);
+                }
+
                 await Client.Indices.PutAliasAsync(activeIndexName, backupIndexAlias);
+
             }
             catch (Exception ex)
             {
@@ -588,15 +580,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         #region Create and configure index
 
-        protected virtual async Task CreateIndexAsync(string indexName)
-        {
-            var response = await Client.Indices.CreateAsync(indexName, i => i.Settings(ConfigureIndexSettings));
-
-            if (!response.IsValid)
-            {
-                ThrowException("Failed to create index. " + response.DebugInformation, response.OriginalException);
-            }
-        }
 
         /// <summary>
         /// Creates an index with assigned alias
@@ -669,23 +652,23 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         protected virtual int GetFieldsLimit()
         {
-            var fieldsLimit = _settingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.IndexTotalFieldsLimit", 1000);
+            var fieldsLimit = SettingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.IndexTotalFieldsLimit", 1000);
             return fieldsLimit;
         }
 
         protected virtual string GetTokenFilterName()
         {
-            return _settingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.TokenFilter", EdgeNGramFilterName);
+            return SettingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.TokenFilter", EdgeNGramFilterName);
         }
 
         protected virtual int GetMinGram()
         {
-            return _settingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.NGramTokenFilter.MinGram", 1);
+            return SettingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.NGramTokenFilter.MinGram", 1);
         }
 
         protected virtual int GetMaxGram()
         {
-            return _settingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.NGramTokenFilter.MaxGram", 20);
+            return SettingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.NGramTokenFilter.MaxGram", 20);
         }
 
         #endregion
@@ -744,7 +727,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         /// <summary>
         /// Gets random name suffix to attach to index (for automatic creation of backup indices)
         /// </summary>
-        private string GetRandomIndexSuffix()
+        protected string GetRandomIndexSuffix()
         {
             var result = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
             result = _specialSymbols.Replace(result, string.Empty);
