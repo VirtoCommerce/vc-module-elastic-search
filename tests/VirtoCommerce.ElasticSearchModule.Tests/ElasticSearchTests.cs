@@ -15,7 +15,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         {
             var host = Environment.GetEnvironmentVariable("TestElasticsearchHost") ?? "localhost:9200";
 
-            var elasticOptions = Options.Create(new ElasticSearchOptions {  Server = host });
+            var elasticOptions = Options.Create(new ElasticSearchOptions { Server = host });
             var searchOptions = Options.Create(new SearchOptions { Scope = "test-core", Provider = "ElasticSearch" });
 
             var provider = new ElasticSearchProvider(elasticOptions, searchOptions, GetSettingsManager(), new ElasticSearchRequestBuilder());

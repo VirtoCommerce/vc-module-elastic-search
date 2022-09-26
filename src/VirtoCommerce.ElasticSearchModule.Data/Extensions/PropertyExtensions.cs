@@ -113,6 +113,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data.Extensions
                 || type.Equals(typeof(object));
         }
 
-        static string ToCamelCase(this string str) => string.IsNullOrEmpty(str) || str.Length< 2 ? str : char.ToLowerInvariant(str[0]) + str.Substring(1);
+        static string ToCamelCase(this string str) => string.IsNullOrEmpty(str) || str.Length < 2 ? str : char.ToLowerInvariant(str[0]) + str.Substring(1);
     }
 }

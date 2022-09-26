@@ -27,7 +27,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         public const string SearchableFieldAnalyzerName = "searchable_field_analyzer";
         public const string NGramFilterName = "custom_ngram";
         public const string EdgeNGramFilterName = "custom_edge_ngram";
-        
+
         private readonly ConcurrentDictionary<string, Properties<IProperties>> _mappings = new ConcurrentDictionary<string, Properties<IProperties>>();
         private readonly SearchOptions _searchOptions;
         private readonly ElasticSearchOptions _elasticSearchOptions;

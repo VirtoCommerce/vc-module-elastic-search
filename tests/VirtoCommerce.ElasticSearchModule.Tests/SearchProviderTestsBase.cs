@@ -10,7 +10,7 @@ using VirtoCommerce.SearchModule.Core.Services;
 
 namespace VirtoCommerce.ElasticSearchModule.Tests
 {
-    
+
 
     public abstract class SearchProviderTestsBase
     {
@@ -204,7 +204,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
                 TestProperties.Add(property);
             }
 
-            public IList<Property> TestProperties { get; set; } = new List<Property>(); 
+            public IList<Property> TestProperties { get; set; } = new List<Property>();
             public string Id { get; set; }
         }
 

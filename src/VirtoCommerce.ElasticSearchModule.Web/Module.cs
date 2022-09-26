@@ -3,7 +3,6 @@ using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using VirtoCommerce.ElasticSearchModule.Data;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Modularity;
@@ -33,7 +32,7 @@ namespace VirtoCommerce.ElasticSearchModule.Web
             {
                 serviceCollection.Configure<ElasticSearchOptions>(Configuration.GetSection("Search:ElasticSearch"));
                 serviceCollection.AddTransient<ElasticSearchRequestBuilder>();
-                serviceCollection.AddSingleton<ISearchProvider, ElasticSearchProvider>();                
+                serviceCollection.AddSingleton<ISearchProvider, ElasticSearchProvider>();
             }
         }
 
