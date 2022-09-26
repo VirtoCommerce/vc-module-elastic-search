@@ -43,7 +43,7 @@ namespace VirtoCommerce.ElasticSearchModule.Web
                     ValueType = SettingValueType.Integer,
                     DefaultValue = 20
                 };
-#pragma warning enable S109
+#pragma warning restore S109
                 public static IEnumerable<SettingDescriptor> AllSettings
                 {
                     get

@@ -650,6 +650,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return edgeNGram.MinGram(GetMinGram()).MaxGram(GetMaxGram());
         }
 
+#pragma warning disable S109
         protected virtual int GetFieldsLimit()
         {
             var fieldsLimit = SettingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.IndexTotalFieldsLimit", 1000);
@@ -670,6 +671,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         {
             return SettingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.NGramTokenFilter.MaxGram", 20);
         }
+#pragma warning restore S109
 
         #endregion
 
