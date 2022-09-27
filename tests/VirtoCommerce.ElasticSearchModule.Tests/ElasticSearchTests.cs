@@ -1,5 +1,6 @@
 using System;
 using Microsoft.Extensions.Options;
+using Nest;
 using VirtoCommerce.ElasticSearchModule.Data;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
@@ -18,7 +19,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             var elasticOptions = Options.Create(new ElasticSearchOptions { Server = host });
             var searchOptions = Options.Create(new SearchOptions { Scope = "test-core", Provider = "ElasticSearch" });
 
-            var provider = new ElasticSearchProvider(elasticOptions, searchOptions, GetSettingsManager(), new ElasticSearchRequestBuilder());
+            var provider = new ElasticSearchProvider(elasticOptions, searchOptions, GetSettingsManager(), (x) => new ElasticClient(x), new ElasticSearchRequestBuilder());
             return provider;
         }
     }

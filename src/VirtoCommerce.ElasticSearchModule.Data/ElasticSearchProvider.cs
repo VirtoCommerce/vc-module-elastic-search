@@ -36,7 +36,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         public ElasticSearchProvider(
             IOptions<ElasticSearchOptions> elasticSearchOptions, IOptions<SearchOptions> searchOptions,
-            ISettingsManager settingsManager, ElasticSearchRequestBuilder requestBuilder)
+            ISettingsManager settingsManager, Func<IConnectionSettingsValues, IElasticClient> clientFactory, ElasticSearchRequestBuilder requestBuilder)
         {
             if (searchOptions == null)
                 throw new ArgumentNullException(nameof(searchOptions));
@@ -45,7 +45,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 throw new ArgumentNullException(nameof(elasticSearchOptions));
 
             SettingsManager = settingsManager;
-            Client = new ElasticClient(GetConnectionSettings(elasticSearchOptions.Value));
+            Client = clientFactory(GetConnectionSettings(elasticSearchOptions.Value));
             RequestBuilder = requestBuilder;
             ServerUrl = Client.ConnectionSettings.ConnectionPool.Nodes.First().Uri;
             _elasticSearchOptions = elasticSearchOptions.Value;

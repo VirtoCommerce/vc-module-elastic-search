@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Nest;
 using VirtoCommerce.ElasticSearchModule.Data;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Modularity;
@@ -32,6 +34,7 @@ namespace VirtoCommerce.ElasticSearchModule.Web
             {
                 serviceCollection.Configure<ElasticSearchOptions>(Configuration.GetSection("Search:ElasticSearch"));
                 serviceCollection.AddTransient<ElasticSearchRequestBuilder>();
+                serviceCollection.AddSingleton<Func<IConnectionSettingsValues, IElasticClient>>((x) => new ElasticClient(x));
                 serviceCollection.AddSingleton<ISearchProvider, ElasticSearchProvider>();
             }
         }
