@@ -10,8 +10,6 @@ using VirtoCommerce.SearchModule.Core.Services;
 
 namespace VirtoCommerce.ElasticSearchModule.Tests
 {
-
-
     public abstract class SearchProviderTestsBase
     {
         protected abstract ISearchProvider GetSearchProvider();

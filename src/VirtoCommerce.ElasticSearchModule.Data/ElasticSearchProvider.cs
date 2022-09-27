@@ -109,7 +109,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 }
 
                 await Client.Indices.PutAliasAsync(activeIndexName, backupIndexAlias);
-
             }
             catch (Exception ex)
             {
@@ -579,7 +578,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         }
 
         #region Create and configure index
-
 
         /// <summary>
         /// Creates an index with assigned alias
