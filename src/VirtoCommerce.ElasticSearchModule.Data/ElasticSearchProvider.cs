@@ -423,6 +423,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     return new NumberProperty(NumberType.Long);
                 case IndexDocumentFieldValueType.Float:
                     return new NumberProperty(NumberType.Float);
+                case IndexDocumentFieldValueType.Decimal:
+                    return new NumberProperty(NumberType.Double);
                 case IndexDocumentFieldValueType.Double:
                     return new NumberProperty(NumberType.Double);
                 case IndexDocumentFieldValueType.DateTime:
