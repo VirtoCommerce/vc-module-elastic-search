@@ -4,10 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Elasticsearch.Net;
 using Microsoft.Extensions.Options;
 using Nest;
-using Nest.JsonNetSerializer;
 using VirtoCommerce.ElasticSearchModule.Data.Extensions;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Settings;
@@ -30,25 +28,22 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         private readonly ConcurrentDictionary<string, Properties<IProperties>> _mappings = new ConcurrentDictionary<string, Properties<IProperties>>();
         private readonly SearchOptions _searchOptions;
-        private readonly ElasticSearchOptions _elasticSearchOptions;
 
         private readonly Regex _specialSymbols = new Regex("[/+_=]", RegexOptions.Compiled);
 
         public ElasticSearchProvider(
-            IOptions<ElasticSearchOptions> elasticSearchOptions, IOptions<SearchOptions> searchOptions,
-            ISettingsManager settingsManager, Func<IConnectionSettingsValues, IElasticClient> clientFactory, ElasticSearchRequestBuilder requestBuilder)
+            IOptions<SearchOptions> searchOptions,
+            ISettingsManager settingsManager,
+            IElasticClient client,
+            ElasticSearchRequestBuilder requestBuilder)
         {
             if (searchOptions == null)
                 throw new ArgumentNullException(nameof(searchOptions));
 
-            if (elasticSearchOptions == null)
-                throw new ArgumentNullException(nameof(elasticSearchOptions));
-
             SettingsManager = settingsManager;
-            Client = clientFactory(GetConnectionSettings(elasticSearchOptions.Value));
+            Client = client;
             RequestBuilder = requestBuilder;
             ServerUrl = Client.ConnectionSettings.ConnectionPool.Nodes.First().Uri;
-            _elasticSearchOptions = elasticSearchOptions.Value;
             _searchOptions = searchOptions.Value;
         }
 
@@ -349,7 +344,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
-        [Obsolete("Left for backwards compatability.")]
+        [Obsolete("Left for backward compatibility.")]
         protected virtual IProperty CreateProviderField(IndexDocumentField field)
         {
             var fieldType = field.Value?.GetType() ?? typeof(object);
@@ -463,7 +458,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 //There are Properties.Values.Value in Category/Product
                 var objects = field.Value.GetPropertyNames<object>(deep: 7).Distinct().ToList();
                 nestedProperty.Properties = new Properties(objects
-                                .Select((v, i) => new { Key = new PropertyName(v), Value = new TextProperty() })
+                                .Select(v => new { Key = new PropertyName(v), Value = new TextProperty() })
                                 .ToDictionary(o => o.Key, o => (IProperty)o.Value));
             }
         }
@@ -499,7 +494,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 }
             }
 
-            properties = properties ?? new Properties<IProperties>();
+            properties ??= new Properties<IProperties>();
             AddMappingToCache(indexName, properties);
             return properties;
         }
@@ -674,57 +669,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 #pragma warning restore S109
 
         #endregion
-
-        protected static IConnectionSettingsValues GetConnectionSettings(ElasticSearchOptions options)
-        {
-            var serverUrl = GetServerUrl(options);
-            var userName = options.User;
-            var password = options.Key;
-            var pool = new SingleNodeConnectionPool(serverUrl);
-            var connectionSettings = new ConnectionSettings(pool, sourceSerializer: JsonNetSerializer.Default);
-
-            if (!string.IsNullOrEmpty(password))
-            {
-                // elastic is default name for elastic cloud
-                connectionSettings.BasicAuthentication(userName ?? "elastic", password);
-            }
-
-            if (options.EnableHttpCompression.HasValue && (bool)options.EnableHttpCompression)
-            {
-                connectionSettings.EnableHttpCompression();
-            }
-
-            if (options.EnableCompatibilityMode.HasValue && (bool)options.EnableCompatibilityMode)
-            {
-                connectionSettings.EnableApiVersioningHeader();
-            }
-
-            if (!string.IsNullOrEmpty(options.CertificateFingerprint))
-            {
-                connectionSettings.CertificateFingerprint(options.CertificateFingerprint);
-            }
-
-            return connectionSettings;
-        }
-
-        protected static Uri GetServerUrl(ElasticSearchOptions options)
-        {
-            var server = options.Server;
-
-            if (string.IsNullOrEmpty(server))
-            {
-                throw new ArgumentException("'Server' parameter must not be empty");
-            }
-
-            if (!server.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
-                !server.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-            {
-                server = "http://" + server;
-            }
-
-            server = server.TrimEnd('/');
-            return new Uri(server);
-        }
 
         /// <summary>
         /// Gets random name suffix to attach to index (for automatic creation of backup indices)
