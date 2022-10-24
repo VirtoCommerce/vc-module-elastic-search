@@ -38,7 +38,7 @@ namespace VirtoCommerce.ElasticSearchModule.Web
                 serviceCollection.AddSingleton<IConnectionSettingsValues, ElasticSearchConnectionSettings>();
                 serviceCollection.AddSingleton<IElasticClient, ElasticSearchClient>();
                 serviceCollection.AddSingleton<ISearchProvider, ElasticSearchProvider>();
-                serviceCollection.AddHealthChecks().AddCheck<ElasticHealthChecker>("elastic_health_checker", tags: new string[] { "Modules", "Elastic" });
+                serviceCollection.AddHealthChecks().AddCheck<ElasticHealthChecker>("Elastic server connection", tags: new string[] { "Modules", "Elastic" });
             }
         }
 
