@@ -24,7 +24,8 @@ namespace VirtoCommerce.ElasticSearchModule.Web.Infrastructure
         {
             // Use different timeout for the healthchecking pings. Otherwise ping will hangs on default timeout so much longer (default is minute and more).
             var pingResult = await _elasticClient.PingAsync(
-                new PingRequest() { RequestConfiguration = new RequestConfiguration() { RequestTimeout = TimeSpan.FromSeconds(_elasticSearchOptions.HealthCheckTimeout) } });
+                new PingRequest() { RequestConfiguration = new RequestConfiguration() { RequestTimeout = TimeSpan.FromSeconds(_elasticSearchOptions.HealthCheckTimeout) } },
+                cancellationToken);
             if (pingResult.IsValid)
             {
                 return HealthCheckResult.Healthy("Elastic server is reachable");
