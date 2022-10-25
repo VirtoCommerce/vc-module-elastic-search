@@ -35,6 +35,8 @@ public class ElasticSearchConnectionSettings : ConnectionSettings
         {
             CertificateFingerprint(options.CertificateFingerprint);
         }
+
+        RequestTimeout(TimeSpan.FromSeconds(options.RequestTimeout));
     }
 
     protected static IConnectionPool GetConnectionPool(ElasticSearchOptions options)
