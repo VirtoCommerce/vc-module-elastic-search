@@ -718,6 +718,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 connectionSettings.EnableHttpCompression();
             }
 
+            connectionSettings.RequestTimeout(TimeSpan.FromSeconds(options.RequestTimeout));
+
             return connectionSettings;
         }
 
