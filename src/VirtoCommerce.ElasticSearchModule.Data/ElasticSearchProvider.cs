@@ -26,6 +26,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         public const string NGramFilterName = "custom_ngram";
         public const string EdgeNGramFilterName = "custom_edge_ngram";
 
+        private const string _exceptionTitle = "CLR Exception";
+
         private readonly ConcurrentDictionary<string, Properties<IProperties>> _mappings = new ConcurrentDictionary<string, Properties<IProperties>>();
         private readonly SearchOptions _searchOptions;
 
@@ -278,15 +280,25 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var bulkResponse = await Client.BulkAsync(bulkDefinition);
             await Client.Indices.RefreshAsync(indexName);
 
-            var result = new IndexingResult
+            var result = new IndexingResult();
+            result.Items = new List<IndexingResultItem>();
+
+            if (!bulkResponse.IsValid && bulkResponse.OriginalException != null)
             {
-                Items = bulkResponse.Items.Select(i => new IndexingResultItem
+                result.Items.Add(new IndexingResultItem
                 {
-                    Id = i.Id,
-                    Succeeded = i.IsValid,
-                    ErrorMessage = i.Error?.Reason
-                }).ToArray()
-            };
+                    Id = _exceptionTitle,
+                    ErrorMessage = bulkResponse.OriginalException.Message,
+                    Succeeded = false
+                });
+            }
+
+            result.Items.AddRange(bulkResponse.Items.Select(i => new IndexingResultItem
+            {
+                Id = i.Id,
+                Succeeded = i.IsValid,
+                ErrorMessage = i.Error?.Reason
+            }));
 
             return result;
         }
