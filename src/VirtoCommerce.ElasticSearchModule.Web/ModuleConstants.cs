@@ -43,6 +43,15 @@ namespace VirtoCommerce.ElasticSearchModule.Web
                     ValueType = SettingValueType.Integer,
                     DefaultValue = 20
                 };
+
+                private static readonly SettingDescriptor DeleteDuplicateIndexes = new()
+                {
+                    Name = "VirtoCommerce.Search.ElasticSearch.DeleteDuplicateIndexes",
+                    GroupName = "Search|ElasticSearch",
+                    ValueType = SettingValueType.Boolean,
+                    DefaultValue = false
+                };
+
 #pragma warning restore S109
                 public static IEnumerable<SettingDescriptor> AllSettings
                 {
@@ -52,6 +61,7 @@ namespace VirtoCommerce.ElasticSearchModule.Web
                         yield return TokenFilter;
                         yield return MinGram;
                         yield return MaxGram;
+                        yield return DeleteDuplicateIndexes;
                     }
                 }
             }
