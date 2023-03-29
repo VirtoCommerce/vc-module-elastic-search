@@ -49,7 +49,7 @@ namespace VirtoCommerce.ElasticSearchModule.Web
                     Name = "VirtoCommerce.Search.ElasticSearch.DeleteDuplicateIndexes",
                     GroupName = "Search|ElasticSearch",
                     ValueType = SettingValueType.Boolean,
-                    DefaultValue = false
+                    DefaultValue = true
                 };
 
 #pragma warning restore S109
