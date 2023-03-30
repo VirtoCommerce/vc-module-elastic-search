@@ -115,9 +115,42 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         public virtual async Task<IndexingResult> IndexWithBackupAsync(string documentType, IList<IndexDocument> documents)
         {
+            // search and delete duplicate indexes
+            if (GetDeleteDuplicateIndexes())
+            {
+                await DeleteDucplicateIndexes(documentType);
+            }
+
             var result = await InternalIndexAsync(documentType, documents, new IndexingParameters { Reindex = true });
 
             return result;
+        }
+
+        private async Task DeleteDucplicateIndexes(string documentType)
+        {
+            var activeIndexAlias = GetIndexAlias(ActiveIndexAlias, documentType);
+            var activeIndexResponse = await Client.Indices.GetAliasAsync(activeIndexAlias);
+            if (activeIndexResponse.Indices.Count > 1)
+            {
+                var indexNames = activeIndexResponse.Indices.Keys.Select(x => x.Name).ToList();
+                var indices = string.Join(',', indexNames);
+
+                var request = new SearchRequest
+                {
+                    Sorting = new[] { new SortingField { FieldName = KnownDocumentFields.IndexationDate, IsDescending = true } },
+                    Take = 1,
+                };
+
+                var providerRequest = RequestBuilder.BuildRequest(request, indices, new Properties<IProperties>());
+                var providerResponse = await Client.SearchAsync<SearchDocument>(providerRequest);
+
+                var latestIndexName = providerResponse.Hits.FirstOrDefault()?.Index;
+                if (!string.IsNullOrEmpty(latestIndexName))
+                {
+                    var indexesToDelete = string.Join(',', indexNames.Where(x => x != latestIndexName));
+                    await Client.Indices.DeleteAsync(indexesToDelete);
+                }
+            }
         }
 
         public virtual async Task<IndexingResult> IndexPartialAsync(string documentType, IList<IndexDocument> documents)
@@ -680,6 +713,11 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         }
 #pragma warning restore S109
 
+        private bool GetDeleteDuplicateIndexes()
+        {
+            return SettingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.DeleteDuplicateIndexes", false);
+        }
+
         #endregion
 
         /// <summary>
@@ -687,7 +725,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         /// </summary>
         protected string GetRandomIndexSuffix()
         {
-            var result = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+            var result = Convert.ToBase64String(Guid.NewGuid().ToByteArray())[..10];
             result = _specialSymbols.Replace(result, string.Empty);
 
             return result;
