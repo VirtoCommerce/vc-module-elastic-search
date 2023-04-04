@@ -21,7 +21,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
                 CreateDocument("Item-1", "Sample Product", "Red", "2017-04-28T15:24:31.180Z", 2, "0,0", null, null, new TestObjectValue(true, "Boolean"), new Price("USD", "default", 123.23m)),
                 CreateDocument("Item-2", "Red Shirt 2", "Red", "2017-04-27T15:24:31.180Z", 4, "0,10", null, null, new TestObjectValue("string", "ShortText"), new Price("USD", "default", 200m), new Price("USD", "sale", 99m), new Price("EUR", "sale", 300m)),
                 CreateDocument("Item-3", "Red Shirt", "Red", "2017-04-26T15:24:31.180Z", 3, "0,20", null, null, new TestObjectValue(true, "Boolean"), new Price("USD", "default", 10m)),
-                CreateDocument("Item-4", "Black Sox", "Black", "2017-04-25T15:24:31.180Z", 10, "0,30", null, null, new TestObjectValue(99.99m, "Number"), new Price("USD", "default", 243.12m), new Price("USD", "supersale", 89m)),
+                CreateDocument("Item-4", "Black Sox", "Black", "2017-04-25T15:24:31.180Z", 10, "0,30", null, null, new TestObjectValue(99.99m, "Number"), new Price("USD", "default", 243.12m), new Price("USD", "super-sale", 89m)),
                 CreateDocument("Item-5", "Black Sox2", "Silver", "2017-04-24T15:24:31.180Z", 20, "0,40", null, null, new TestObjectValue(new DateTime(2020, 12, 17, 0, 0, 0), "DateTime"), new Price("USD", "default", 700m)),
             };
         }
@@ -94,9 +94,9 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         {
             var mock = new Mock<ITestSettingsManager>();
 
-            mock.Setup(s => s.GetValue(It.IsAny<string>(), It.IsAny<string>())).Returns((string name, string defaultValue) => defaultValue);
-            mock.Setup(s => s.GetValue(It.IsAny<string>(), It.IsAny<bool>())).Returns((string name, bool defaultValue) => defaultValue);
-            mock.Setup(s => s.GetValue(It.IsAny<string>(), It.IsAny<int>())).Returns((string name, int defaultValue) => defaultValue);
+            mock.Setup(s => s.GetValue(It.IsAny<string>(), It.IsAny<string>())).Returns((string _, string defaultValue) => defaultValue);
+            mock.Setup(s => s.GetValue(It.IsAny<string>(), It.IsAny<bool>())).Returns((string _, bool defaultValue) => defaultValue);
+            mock.Setup(s => s.GetValue(It.IsAny<string>(), It.IsAny<int>())).Returns((string _, int defaultValue) => defaultValue);
             mock.Setup(s => s.GetObjectSettingAsync(It.IsAny<string>(), null, null))
                 .Returns(Task.FromResult(new ObjectSettingEntry()));
 

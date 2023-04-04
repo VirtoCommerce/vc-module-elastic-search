@@ -5,7 +5,7 @@ using Xunit;
 
 namespace VirtoCommerce.ElasticSearchModule.Tests
 {
-    [TestCaseOrderer(PriorityTestCaseOrderer.TypeName, PriorityTestCaseOrderer.AssembyName)]
+    [TestCaseOrderer(PriorityTestCaseOrderer.TypeName, PriorityTestCaseOrderer.AssemblyName)]
     [Trait("Category", "IntegrationTest")]
     public abstract class SearchProviderTests : SearchProviderTestsBase
     {
@@ -67,7 +67,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         }
 
         [Fact]
-        public virtual async Task CanRetriveStringCollection()
+        public virtual async Task CanRetrieveStringCollection()
         {
             var provider = GetSearchProvider();
 
@@ -387,7 +387,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
                 Filter = new TermFilter
                 {
                     FieldName = "HasMultiplePrices",
-                    Values = new[] { "tRue" } // Value should be case insensitive
+                    Values = new[] { "tRuE" } // Value should be case insensitive
                 },
                 Take = 10,
             };
@@ -402,7 +402,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
                 Filter = new TermFilter
                 {
                     FieldName = "HasMultiplePrices",
-                    Values = new[] { "fAlse" } // Value should be case insensitive
+                    Values = new[] { "fAlSe" } // Value should be case insensitive
                 },
                 Take = 10,
             };
@@ -507,7 +507,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
                 {
                     FieldName = "Location",
                     Location = GeoPoint.TryParse("0, 14"),
-                    Distance = 1110, // less than 10 degrees (1 degree at the equater is about 111 km)
+                    Distance = 1110, // less than 10 degrees (1 degree at the equator is about 111 km)
                 },
                 Take = 10,
             };

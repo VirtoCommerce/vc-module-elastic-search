@@ -11,7 +11,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
     public class ElasticSearchRequestBuilder
     {
         // Used to map 'score' sort field to Elastic Search _score sorting field 
-        private const string Score = "score";
+        protected const string Score = "score";
 
         public virtual ISearchRequest BuildRequest(SearchRequest request, string indexName, Properties<IProperties> availableFields)
         {
@@ -41,13 +41,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         protected virtual SourceFilter GetSourceFilters(SearchRequest request)
         {
-            SourceFilter result = null;
-            if (request?.IncludeFields != null)
-            {
-                return new SourceFilter { Includes = request.IncludeFields.ToArray() };
-            }
-
-            return result;
+            return request?.IncludeFields != null
+                ? new SourceFilter { Includes = request.IncludeFields.ToArray() }
+                : null;
         }
 
         protected virtual QueryContainer GetQuery(SearchRequest request)
@@ -318,14 +314,11 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     var fieldName = ElasticSearchHelper.ToElasticFieldName(aggregation.FieldName);
                     var filter = GetFilterQueryRecursive(aggregation.Filter, availableFields);
 
-                    var termAggregationRequest = aggregation as TermAggregationRequest;
-                    var rangeAggregationRequest = aggregation as RangeAggregationRequest;
-
-                    if (termAggregationRequest != null)
+                    if (aggregation is TermAggregationRequest termAggregationRequest)
                     {
                         AddTermAggregationRequest(result, aggregationId, fieldName, filter, termAggregationRequest);
                     }
-                    else if (rangeAggregationRequest != null)
+                    else if (aggregation is RangeAggregationRequest rangeAggregationRequest)
                     {
                         AddRangeAggregationRequest(result, aggregationId, fieldName, filter, rangeAggregationRequest.Values);
                     }
@@ -379,7 +372,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected virtual void AddRangeAggregationRequest(Dictionary<string, AggregationContainer> container, string aggregationId, string fieldName, IEnumerable<RangeAggregationRequestValue> values)
         {
             if (values == null)
+            {
                 return;
+            }
 
             foreach (var value in values)
             {

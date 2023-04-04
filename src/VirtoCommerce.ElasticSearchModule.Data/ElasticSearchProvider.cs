@@ -28,10 +28,10 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         private const string _exceptionTitle = "Elasticsearch Server";
 
-        private readonly ConcurrentDictionary<string, Properties<IProperties>> _mappings = new ConcurrentDictionary<string, Properties<IProperties>>();
+        private readonly ConcurrentDictionary<string, Properties<IProperties>> _mappings = new();
         private readonly SearchOptions _searchOptions;
 
-        private readonly Regex _specialSymbols = new Regex("[/+_=]", RegexOptions.Compiled);
+        private readonly Regex _specialSymbols = new("[/+_=]", RegexOptions.Compiled);
 
         public ElasticSearchProvider(
             IOptions<SearchOptions> searchOptions,
@@ -40,7 +40,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             ElasticSearchRequestBuilder requestBuilder)
         {
             if (searchOptions == null)
+            {
                 throw new ArgumentNullException(nameof(searchOptions));
+            }
 
             SettingsManager = settingsManager;
             Client = client;
@@ -118,7 +120,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             // search and delete duplicate indexes
             if (GetDeleteDuplicateIndexes())
             {
-                await DeleteDucplicateIndexes(documentType);
+                await DeleteDuplicateIndexes(documentType);
             }
 
             var result = await InternalIndexAsync(documentType, documents, new IndexingParameters { Reindex = true });
@@ -126,7 +128,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
-        private async Task DeleteDucplicateIndexes(string documentType)
+        private async Task DeleteDuplicateIndexes(string documentType)
         {
             var activeIndexAlias = GetIndexAlias(ActiveIndexAlias, documentType);
             var activeIndexResponse = await Client.Indices.GetAliasAsync(activeIndexAlias);
@@ -367,9 +369,11 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                         && !dictionary.ContainsKey(fieldName))
                     {
                         // Create new property mapping
-                        var providerField = field.ValueType == IndexDocumentFieldValueType.Undefined ?
-                            CreateProviderField(field) :
-                            CreateProviderFieldByType(field);
+#pragma warning disable CS0618 // Type or member is obsolete
+                        var providerField = field.ValueType == IndexDocumentFieldValueType.Undefined
+                            ? CreateProviderField(field)
+                            : CreateProviderFieldByType(field);
+#pragma warning restore CS0618 // Type or member is obsolete
 
                         ConfigureProperty(providerField, field);
                         properties.Add(fieldName, providerField);
@@ -396,15 +400,16 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             if (fieldType == typeof(string))
             {
-                if (field.IsFilterable)
-                    return new KeywordProperty();
-
-                return new TextProperty();
+                return field.IsFilterable
+                    ? new KeywordProperty()
+                    : new TextProperty();
             }
+
             if (typeof(IEntity).IsAssignableFrom(fieldType) || (fieldType.IsArray && typeof(IEntity).IsAssignableFrom(fieldType.GetElementType())))
             {
                 return new NestedProperty();
             }
+
             switch (fieldType.Name)
             {
                 case "Int32":
@@ -560,7 +565,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         protected virtual Properties<IProperties> GetMappingFromCache(string indexName)
         {
-            return _mappings.ContainsKey(indexName) ? _mappings[indexName] : null;
+            return _mappings.TryGetValue(indexName, out var properties) ? properties : null;
         }
 
         protected virtual void AddMappingToCache(string indexName, Properties<IProperties> properties)
@@ -570,7 +575,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         protected virtual void RemoveMappingFromCache(string indexName)
         {
-            _mappings.TryRemove(indexName, out var _);
+            _mappings.TryRemove(indexName, out _);
         }
 
         protected virtual string CreateCacheKey(params string[] parts)
