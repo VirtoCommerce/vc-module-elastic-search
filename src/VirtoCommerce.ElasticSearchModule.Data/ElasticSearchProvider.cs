@@ -16,7 +16,7 @@ using SearchRequest = VirtoCommerce.SearchModule.Core.Model.SearchRequest;
 
 namespace VirtoCommerce.ElasticSearchModule.Data
 {
-    public class ElasticSearchProvider : ISearchProvider, ISupportIndexSwap, ISupportPartialUpdate
+    public class ElasticSearchProvider : ISearchProvider, ISupportIndexSwap, ISupportPartialUpdate, ISupportIndexCreate
     {
         // prefixes for index aliases
         public const string ActiveIndexAlias = "active";
@@ -113,6 +113,11 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             {
                 ThrowException("Failed to swap indexes", ex);
             }
+        }
+
+        public async Task CreateIndexAsync(string documentType, IndexDocument schema)
+        {
+            await InternalCreateIndexAsync(documentType, new[] { schema }, new IndexingParameters { Reindex = true });
         }
 
         public virtual async Task<IndexingResult> IndexWithBackupAsync(string documentType, IList<IndexDocument> documents)
@@ -278,28 +283,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         protected virtual async Task<IndexingResult> InternalIndexAsync(string documentType, IList<IndexDocument> documents, IndexingParameters parameters)
         {
-            // use backup index in case of reindexing
-            var alias = parameters.Reindex
-                ? BackupIndexAlias
-                : ActiveIndexAlias;
-            var indexName = GetIndexAlias(alias, documentType);
-
-            var providerFields = await GetMappingAsync(indexName);
-            var oldFieldsCount = providerFields.Count();
-            var providerDocuments = documents.Select(document => ConvertToProviderDocument(document, providerFields)).ToList();
-            var updateMapping = !parameters.PartialUpdate && providerFields.Count() != oldFieldsCount;
-            var indexExists = await IndexExistsAsync(indexName);
-
-            if (!indexExists)
-            {
-                var newIndexName = GetIndexName(documentType, GetRandomIndexSuffix());
-                await CreateIndexAsync(newIndexName, alias: indexName);
-            }
-
-            if (!indexExists || updateMapping)
-            {
-                await UpdateMappingAsync(indexName, providerFields);
-            }
+            var (indexName, providerDocuments) = await InternalCreateIndexAsync(documentType, documents, parameters);
 
             var bulkDefinition = new BulkDescriptor();
 
@@ -316,7 +300,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             await Client.Indices.RefreshAsync(indexName);
 
             var result = new IndexingResult();
-            result.Items = new List<IndexingResultItem>();
 
             if (!bulkResponse.IsValid)
             {
@@ -336,6 +319,37 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }));
 
             return result;
+        }
+
+        protected virtual async Task<(string indexName, List<SearchDocument> providerDocuments)> InternalCreateIndexAsync(
+            string documentType,
+            IList<IndexDocument> documents,
+            IndexingParameters parameters)
+        {
+            // Use backup index in case of reindexing
+            var alias = parameters.Reindex
+                ? BackupIndexAlias
+                : ActiveIndexAlias;
+
+            var indexName = GetIndexAlias(alias, documentType);
+            var providerFields = await GetMappingAsync(indexName);
+            var oldFieldsCount = providerFields.Count();
+            var providerDocuments = documents.Select(document => ConvertToProviderDocument(document, providerFields)).ToList();
+            var updateMapping = !parameters.PartialUpdate && providerFields.Count() != oldFieldsCount;
+            var indexExists = await IndexExistsAsync(indexName);
+
+            if (!indexExists)
+            {
+                var newIndexName = GetIndexName(documentType, GetRandomIndexSuffix());
+                await CreateIndexAsync(newIndexName, alias: indexName);
+            }
+
+            if (!indexExists || updateMapping)
+            {
+                await UpdateMappingAsync(indexName, providerFields);
+            }
+
+            return (indexName, providerDocuments);
         }
 
         protected virtual SearchDocument ConvertToProviderDocument(IndexDocument document, Properties<IProperties> properties)

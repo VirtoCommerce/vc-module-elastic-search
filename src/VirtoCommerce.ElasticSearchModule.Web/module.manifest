@@ -6,7 +6,7 @@
 
     <platformVersion>3.200.0</platformVersion>
     <dependencies>
-        <dependency id="VirtoCommerce.Search" version="3.218.0" />
+        <dependency id="VirtoCommerce.Search" version="3.220.0" />
     </dependencies>
 
     <title>Elastic Search module</title>
