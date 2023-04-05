@@ -33,6 +33,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         private readonly SearchOptions _searchOptions;
 
         private readonly Regex _specialSymbols = new("[/+_=]", RegexOptions.Compiled);
+        private readonly object _propertiesLockObject = new();
 
         public ElasticSearchProvider(
             IOptions<SearchOptions> searchOptions,
@@ -377,15 +378,23 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     if (properties is IDictionary<PropertyName, IProperty> dictionary
                         && !dictionary.ContainsKey(fieldName))
                     {
-                        // Create new property mapping
+                        // Scalable indexation can be multi-threaded
+                        lock (_propertiesLockObject)
+                        {
+                            if (!dictionary.ContainsKey(fieldName))
+                            {
+                                // Create new property mapping
 #pragma warning disable CS0618 // Type or member is obsolete
-                        var providerField = field.ValueType == IndexDocumentFieldValueType.Undefined
-                            ? CreateProviderField(field)
-                            : CreateProviderFieldByType(field);
+                                var providerField = field.ValueType == IndexDocumentFieldValueType.Undefined
+                                    ? CreateProviderField(field)
+                                    : CreateProviderFieldByType(field);
 #pragma warning restore CS0618 // Type or member is obsolete
 
-                        ConfigureProperty(providerField, field);
-                        properties.Add(fieldName, providerField);
+                                ConfigureProperty(providerField, field);
+
+                                properties.Add(fieldName, providerField);
+                            }
+                        }
                     }
 
                     var isCollection = field.IsCollection || field.Values.Count > 1;
