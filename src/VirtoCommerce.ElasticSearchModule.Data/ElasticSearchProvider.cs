@@ -64,52 +64,57 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 throw new ArgumentNullException(nameof(documentType));
             }
 
-            try
+            // get active index and alias
+            var activeIndexAlias = GetIndexAlias(ActiveIndexAlias, documentType);
+
+            // if no active index found - check that default (active) index, if not create, if does assign the alias to it
+            var indexExists = await IndexExistsAsync(activeIndexAlias);
+            if (!indexExists)
             {
-                // get active index and alias
-                var activeIndexAlias = GetIndexAlias(ActiveIndexAlias, documentType);
-
-                // if no active index found - check that default (active) index, if not create, if does assign the alias to it
-                var indexExists = await IndexExistsAsync(activeIndexAlias);
-                if (!indexExists)
+                var indexName = GetIndexName(documentType);
+                var indexExits = await IndexExistsAsync(indexName);
+                if (!indexExits)
                 {
-                    var indexName = GetIndexName(documentType);
-                    var indexExits = await IndexExistsAsync(indexName);
-                    if (!indexExits)
-                    {
-                        // create new index with alias
-                        await CreateIndexAsync(indexName, activeIndexAlias);
-                    }
-                    else
-                    {
-                        // attach alias to default index
-                        await Client.Indices.PutAliasAsync(indexName, activeIndexAlias);
-                    }
-
+                    // create new index with alias
+                    await CreateIndexAsync(indexName, activeIndexAlias);
+                }
+                else
+                {
+                    // attach alias to default index
+                    await Client.Indices.PutAliasAsync(indexName, activeIndexAlias);
                 }
 
-                var activeIndexResponse = await Client.Indices.GetAliasAsync(activeIndexAlias);
-                var activeIndexName = activeIndexResponse.Indices.FirstOrDefault().Key;
-
-                // get backup index and alias
-                var backupIndexAlias = GetIndexAlias(BackupIndexAlias, documentType);
-                // swap
-                await Client.Indices.DeleteAliasAsync(activeIndexName, activeIndexAlias);
-
-                if (await IndexExistsAsync(backupIndexAlias))
-                {
-                    var backupIndexResponse = await Client.Indices.GetAliasAsync(backupIndexAlias);
-                    var backupIndexName = backupIndexResponse.Indices.FirstOrDefault().Key;
-
-                    await Client.Indices.DeleteAliasAsync(backupIndexName, backupIndexAlias);
-                    await Client.Indices.PutAliasAsync(backupIndexName, activeIndexAlias);
-                }
-
-                await Client.Indices.PutAliasAsync(activeIndexName, backupIndexAlias);
             }
-            catch (Exception ex)
+
+            // swap start
+            var activeIndexResponse = await Client.GetIndicesPointingToAliasAsync(activeIndexAlias);
+            var activeIndexName = activeIndexResponse?.FirstOrDefault();
+            if (string.IsNullOrEmpty(activeIndexName))
             {
-                ThrowException("Failed to swap indexes", ex);
+                return;
+            }
+
+            var bulkAliasDescriptor = new BulkAliasDescriptor();
+
+            bulkAliasDescriptor.Remove(x => x.Index(activeIndexName).Alias(activeIndexAlias));
+
+            var backupIndexAlias = GetIndexAlias(BackupIndexAlias, documentType);
+            var backupIndexResponse = await Client.GetIndicesPointingToAliasAsync(backupIndexAlias);
+            var backupIndexName = backupIndexResponse?.FirstOrDefault();
+
+            if (!string.IsNullOrEmpty(backupIndexName))
+            {
+                bulkAliasDescriptor.Remove(x => x.Index(backupIndexName).Alias(backupIndexAlias));
+                bulkAliasDescriptor.Add(a => a.Index(backupIndexName).Alias(activeIndexAlias));
+            }
+
+            bulkAliasDescriptor.Add(a => a.Index(activeIndexName).Alias(backupIndexAlias));
+
+            var swapResponse = Client.Indices.BulkAlias(bulkAliasDescriptor);
+
+            if (swapResponse.ServerError != null)
+            {
+                ThrowException($"Failed to swap indexes for the document type: {documentType}", swapResponse.OriginalException);
             }
         }
 
