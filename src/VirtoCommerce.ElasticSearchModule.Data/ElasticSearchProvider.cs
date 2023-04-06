@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
 using VirtoCommerce.ElasticSearchModule.Data.Extensions;
@@ -33,11 +34,14 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         private readonly Regex _specialSymbols = new Regex("[/+_=]", RegexOptions.Compiled);
 
+        private readonly ILogger<ElasticSearchProvider> _logger;
+
         public ElasticSearchProvider(
             IOptions<SearchOptions> searchOptions,
             ISettingsManager settingsManager,
             IElasticClient client,
-            ElasticSearchRequestBuilder requestBuilder)
+            ElasticSearchRequestBuilder requestBuilder,
+            ILogger<ElasticSearchProvider> logger)
         {
             if (searchOptions == null)
                 throw new ArgumentNullException(nameof(searchOptions));
@@ -47,6 +51,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             RequestBuilder = requestBuilder;
             ServerUrl = Client.ConnectionSettings.ConnectionPool.Nodes.First().Uri;
             _searchOptions = searchOptions.Value;
+            _logger = logger;
         }
 
         protected IElasticClient Client { get; }
@@ -263,19 +268,26 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         /// </summary>
         public void AddActiveAlias(IEnumerable<string> documentTypes)
         {
-            foreach (var documentType in documentTypes)
+            try
             {
-                var indexAlias = GetIndexAlias(ActiveIndexAlias, documentType);
-                if (IndexExists(indexAlias))
+                foreach (var documentType in documentTypes)
                 {
-                    continue;
-                }
+                    var indexAlias = GetIndexAlias(ActiveIndexAlias, documentType);
+                    if (IndexExists(indexAlias))
+                    {
+                        continue;
+                    }
 
-                var indexName = GetIndexName(documentType);
-                if (IndexExists(indexName))
-                {
-                    Client.Indices.PutAlias(indexName, indexAlias);
+                    var indexName = GetIndexName(documentType);
+                    if (IndexExists(indexName))
+                    {
+                        Client.Indices.PutAlias(indexName, indexAlias);
+                    }
                 }
+            }
+            catch (SearchException ex)
+            {
+                _logger.LogError(ex, $"Error while putting an active alias on a default index at {nameof(AddActiveAlias)}. Possible fail on Elastic servier side at IndexExists check.");
             }
         }
 
@@ -615,12 +627,22 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected virtual async Task<bool> IndexExistsAsync(string indexName)
         {
             var response = await Client.Indices.ExistsAsync(indexName);
+            if (response.ServerError != null)
+            {
+                ThrowException($"Cannot create index: {indexName}", response.OriginalException);
+            }
+
             return response.Exists;
         }
 
         protected virtual bool IndexExists(string indexName)
         {
             var response = Client.Indices.Exists(indexName);
+            if (response.ServerError != null)
+            {
+                ThrowException($"Cannot create index: {indexName}", response.OriginalException);
+            }
+
             return response.Exists;
         }
 
