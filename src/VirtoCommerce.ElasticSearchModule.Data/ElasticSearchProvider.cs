@@ -117,7 +117,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             var swapResponse = Client.Indices.BulkAlias(bulkAliasDescriptor);
 
-            if (swapResponse.ServerError != null)
+            if (!swapResponse.IsValid)
             {
                 ThrowException($"Failed to swap indexes for the document type: {documentType}", swapResponse.OriginalException);
             }
@@ -627,7 +627,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected virtual async Task<bool> IndexExistsAsync(string indexName)
         {
             var response = await Client.Indices.ExistsAsync(indexName);
-            if (response.ServerError != null)
+            if (response.ApiCall?.Success == false)
             {
                 ThrowException($"Cannot create index: {indexName}", response.OriginalException);
             }
@@ -638,7 +638,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected virtual bool IndexExists(string indexName)
         {
             var response = Client.Indices.Exists(indexName);
-            if (response.ServerError != null)
+            if (response.ApiCall?.Success == false)
             {
                 ThrowException($"Cannot create index: {indexName}", response.OriginalException);
             }
