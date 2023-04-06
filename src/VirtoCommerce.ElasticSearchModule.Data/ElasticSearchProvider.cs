@@ -559,11 +559,15 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         protected virtual async Task<Properties<IProperties>> GetMappingAsync(string indexName)
         {
-            var properties = GetMappingFromCache(indexName);
-            if (properties == null && await IndexExistsAsync(indexName))
+            if (GetMappingFromCache(indexName, out var properties))
             {
-                var providerMapping = await Client.Indices.GetMappingAsync(new GetMappingRequest(indexName));
-                var mapping = providerMapping.GetMappingFor(indexName);
+                return properties;
+            }
+
+            if (await IndexExistsAsync(indexName))
+            {
+                var mappingResponse = await Client.Indices.GetMappingAsync(new GetMappingRequest(indexName));
+                var mapping = mappingResponse.GetMappingFor(indexName);
                 if (mapping != null)
                 {
                     properties = new Properties<IProperties>(mapping.Properties);
@@ -572,6 +576,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             properties ??= new Properties<IProperties>();
             AddMappingToCache(indexName, properties);
+
             return properties;
         }
 
@@ -589,9 +594,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             await Client.Indices.RefreshAsync(indexName);
         }
 
-        protected virtual Properties<IProperties> GetMappingFromCache(string indexName)
+        protected virtual bool GetMappingFromCache(string indexName, out Properties<IProperties> properties)
         {
-            return _mappings.TryGetValue(indexName, out var properties) ? properties : null;
+            return _mappings.TryGetValue(indexName, out properties);
         }
 
         protected virtual void AddMappingToCache(string indexName, Properties<IProperties> properties)
