@@ -629,7 +629,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var response = await Client.Indices.ExistsAsync(indexName);
             if (response.ApiCall?.Success == false)
             {
-                ThrowException($"Cannot create index: {indexName}", response.OriginalException);
+                ThrowException($"Index check call failed for index: {indexName}", response.OriginalException);
             }
 
             return response.Exists;
@@ -640,7 +640,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var response = Client.Indices.Exists(indexName);
             if (response.ApiCall?.Success == false)
             {
-                ThrowException($"Cannot create index: {indexName}", response.OriginalException);
+                ThrowException($"Index check call failed for index: {indexName}", response.OriginalException);
             }
 
             return response.Exists;
