@@ -287,7 +287,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
             catch (SearchException ex)
             {
-                _logger.LogError(ex, $"Error while putting an active alias on a default index at {nameof(AddActiveAlias)}. Possible fail on Elastic servier side at IndexExists check.");
+                _logger.LogError(ex, $"Error while putting an active alias on a default index at {nameof(AddActiveAlias)}. Possible fail on Elastic server side at IndexExists check.");
             }
         }
 
