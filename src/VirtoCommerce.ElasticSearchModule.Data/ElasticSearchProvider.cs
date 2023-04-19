@@ -29,11 +29,10 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         private const string _exceptionTitle = "Elasticsearch Server";
 
-        private readonly ConcurrentDictionary<string, Properties<IProperties>> _mappings = new();
+        private readonly ConcurrentDictionary<string, IProperties> _mappings = new();
         private readonly SearchOptions _searchOptions;
 
         private readonly Regex _specialSymbols = new("[/+_=]", RegexOptions.Compiled);
-        private readonly object _propertiesLockObject = new();
 
         public ElasticSearchProvider(
             IOptions<SearchOptions> searchOptions,
@@ -283,7 +282,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
-        protected virtual async Task<(string indexName, List<SearchDocument> providerDocuments)> InternalCreateIndexAsync(
+        protected virtual async Task<(string indexName, IList<SearchDocument> providerDocuments)> InternalCreateIndexAsync(
             string documentType,
             IList<IndexDocument> documents,
             IndexingParameters parameters)
@@ -296,7 +295,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 : ActiveIndexAlias;
 
             var indexName = GetIndexAlias(alias, documentType);
-            var providerFields = await GetMappingAsync(indexName);
+            var providerFields = new Properties<IProperties>(await GetMappingAsync(indexName)); // Make a copy
             var oldFieldsCount = providerFields.Count();
             var providerDocuments = documents.Select(document => ConvertToProviderDocument(document, providerFields)).ToList();
             var updateMapping = !parameters.PartialUpdate && providerFields.Count() != oldFieldsCount;
@@ -348,7 +347,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
         }
 
-        protected virtual SearchDocument ConvertToProviderDocument(IndexDocument document, Properties<IProperties> properties)
+        protected virtual SearchDocument ConvertToProviderDocument(IndexDocument document, IProperties properties)
         {
             var result = new SearchDocument { Id = document.Id };
 
@@ -375,25 +374,17 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 }
                 else
                 {
-                    if (properties is IDictionary<PropertyName, IProperty> dictionary
-                        && !dictionary.ContainsKey(fieldName))
+                    if (!properties.ContainsKey(fieldName))
                     {
-                        // Scalable indexation can be multi-threaded
-                        lock (_propertiesLockObject)
-                        {
-                            if (!dictionary.ContainsKey(fieldName))
-                            {
-                                // Create new property mapping
+                        // Create new property mapping
 #pragma warning disable CS0618 // Type or member is obsolete
-                                var providerField = field.ValueType == IndexDocumentFieldValueType.Undefined
-                                    ? CreateProviderField(field)
-                                    : CreateProviderFieldByType(field);
+                        var providerField = field.ValueType == IndexDocumentFieldValueType.Undefined
+                            ? CreateProviderField(field)
+                            : CreateProviderFieldByType(field);
 #pragma warning restore CS0618 // Type or member is obsolete
 
-                                ConfigureProperty(providerField, field);
-                                properties.Add(fieldName, providerField);
-                            }
-                        }
+                        ConfigureProperty(providerField, field);
+                        properties.Add(fieldName, providerField);
                     }
 
                     var isCollection = field.IsCollection || field.Values.Count > 1;
@@ -528,7 +519,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                         break;
                 }
             }
-            else if (property is NestedProperty nestedProperty)
+            else if (property is INestedProperty nestedProperty)
             {
                 //VP-6107: need to index all objects with type 'Object' as 'Text'
                 //There are Properties.Values.Value in Category/Product
@@ -557,7 +548,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
         }
 
-        protected virtual async Task<Properties<IProperties>> GetMappingAsync(string indexName)
+        protected virtual async Task<IProperties> GetMappingAsync(string indexName)
         {
             if (GetMappingFromCache(indexName, out var properties))
             {
@@ -566,12 +557,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             if (await IndexExistsAsync(indexName))
             {
-                var mappingResponse = await Client.Indices.GetMappingAsync(new GetMappingRequest(indexName));
-                var mapping = mappingResponse.GetMappingFor(indexName);
-                if (mapping != null)
-                {
-                    properties = new Properties<IProperties>(mapping.Properties);
-                }
+                properties = await LoadMappingAsync(indexName);
             }
 
             properties ??= new Properties<IProperties>();
@@ -580,26 +566,64 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return properties;
         }
 
-        protected virtual async Task UpdateMappingAsync(string indexName, Properties<IProperties> properties)
+        protected virtual async Task UpdateMappingAsync(string indexName, IProperties properties)
         {
-            var mappingRequest = new PutMappingRequest(indexName) { Properties = properties };
-            var response = await Client.MapAsync(mappingRequest);
+            IProperties newProperties;
+            IProperties allProperties;
 
-            if (!response.IsValid)
+            var existingProperties = await LoadMappingAsync(indexName);
+
+            if (existingProperties == null)
             {
-                ThrowException("Failed to submit mapping. " + response.DebugInformation, response.OriginalException);
+                allProperties = properties;
+                newProperties = properties;
+            }
+            else
+            {
+                newProperties = new Properties<IProperties>();
+                allProperties = existingProperties;
+
+                foreach (var (name, value) in properties)
+                {
+                    if (!existingProperties.ContainsKey(name))
+                    {
+                        allProperties.Add(name, value);
+                        newProperties.Add(name, value);
+                    }
+                }
             }
 
-            AddMappingToCache(indexName, properties);
+            if (newProperties.Any())
+            {
+                var request = new PutMappingRequest(indexName) { Properties = newProperties };
+                var response = await Client.MapAsync(request);
+
+                if (!response.IsValid)
+                {
+                    ThrowException("Failed to submit mapping. " + response.DebugInformation, response.OriginalException);
+                }
+            }
+
+            AddMappingToCache(indexName, allProperties);
             await Client.Indices.RefreshAsync(indexName);
         }
 
-        protected virtual bool GetMappingFromCache(string indexName, out Properties<IProperties> properties)
+        protected virtual async Task<IProperties> LoadMappingAsync(string indexName)
+        {
+            var mappingResponse = await Client.Indices.GetMappingAsync(new GetMappingRequest(indexName));
+
+            var mapping = mappingResponse.GetMappingFor(indexName) ??
+                          mappingResponse.Indices.Values.FirstOrDefault()?.Mappings;
+
+            return mapping?.Properties;
+        }
+
+        protected virtual bool GetMappingFromCache(string indexName, out IProperties properties)
         {
             return _mappings.TryGetValue(indexName, out properties);
         }
 
-        protected virtual void AddMappingToCache(string indexName, Properties<IProperties> properties)
+        protected virtual void AddMappingToCache(string indexName, IProperties properties)
         {
             _mappings[indexName] = properties;
         }
