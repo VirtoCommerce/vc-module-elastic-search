@@ -575,8 +575,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             if (existingProperties == null)
             {
-                allProperties = properties;
                 newProperties = properties;
+                allProperties = properties;
             }
             else
             {
@@ -587,8 +587,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 {
                     if (!existingProperties.ContainsKey(name))
                     {
-                        allProperties.Add(name, value);
                         newProperties.Add(name, value);
+                        allProperties.Add(name, value);
                     }
                 }
             }
