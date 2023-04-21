@@ -709,9 +709,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 .Analysis(a => a
                     .TokenFilters(ConfigureTokenFilters)
                     .Analyzers(ConfigureAnalyzers)
-                        .Normalizers(n => n
-                            .Custom("case_insensitive", cn => cn
-                                .Filters("lowercase"))));
+                    .Normalizers(n => n
+                        .Custom("case_insensitive", cn => cn
+                            .Filters("lowercase"))));
         }
 
         protected virtual AliasesDescriptor ConfigureAliases(AliasesDescriptor aliases, string alias)

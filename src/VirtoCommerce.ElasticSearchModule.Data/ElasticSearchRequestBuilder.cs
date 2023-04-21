@@ -188,7 +188,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var termValues = termFilter.Values;
 
             var field = availableFields.Where(kvp => kvp.Key.Name.EqualsInvariant(termFilter.FieldName)).Select(kvp => kvp.Value).FirstOrDefault();
-            if (field?.Type?.EqualsInvariant("boolean") == true)
+            if (field?.Type?.EqualsInvariant(FieldType.Boolean.ToString()) == true)
             {
                 termValues = termValues.Select(v => v switch
                 {

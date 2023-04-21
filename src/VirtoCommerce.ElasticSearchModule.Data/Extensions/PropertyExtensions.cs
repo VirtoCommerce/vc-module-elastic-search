@@ -87,22 +87,34 @@ namespace VirtoCommerce.ElasticSearchModule.Data.Extensions
             }
         }
 
-        static Type GetElementTypeOrSelf(Type type)
+        private static Type GetElementTypeOrSelf(Type type)
         {
             if (type.IsArray && typeof(IEntity).IsAssignableFrom(type.GetElementType()))
+            {
                 return type.GetElementType();
+            }
+
             if (typeof(IEntity).IsAssignableFrom(type))
+            {
                 return type;
+            }
+
             if (!type.IsGenericType)
+            {
                 return type;
+            }
+
             if (type.GetGenericTypeDefinition() != typeof(IList<>))
+            {
                 return null;
+            }
+
             return type.GetGenericArguments()[0];
         }
 
-        static bool IsNested(Type type)
+        private static bool IsNested(Type type)
         {
-            if (type.Equals(typeof(string)) || (type.IsArray && typeof(string).IsAssignableFrom(type.GetElementType())))
+            if (type == typeof(string) || (type.IsArray && typeof(string).IsAssignableFrom(type.GetElementType())))
             {
                 return false;
             }
@@ -110,9 +122,12 @@ namespace VirtoCommerce.ElasticSearchModule.Data.Extensions
             return (type.IsArray && typeof(IEntity).IsAssignableFrom(type.GetElementType()))
                 || (typeof(IEntity).IsAssignableFrom(type))
                 || !type.IsPrimitive
-                || type.Equals(typeof(object));
+                || type == typeof(object);
         }
 
-        static string ToCamelCase(this string str) => string.IsNullOrEmpty(str) || str.Length < 2 ? str : char.ToLowerInvariant(str[0]) + str.Substring(1);
+        private static string ToCamelCase(this string str) =>
+            string.IsNullOrEmpty(str) || str.Length < 2
+                ? str
+                : char.ToLowerInvariant(str[0]) + str.Substring(1);
     }
 }
