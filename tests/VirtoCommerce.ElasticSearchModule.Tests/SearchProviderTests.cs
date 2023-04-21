@@ -17,13 +17,16 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         {
             var provider = GetSearchProvider();
 
-            // Delete index
+            // Delete backup index
             await provider.DeleteIndexAsync(DocumentType);
 
-            // Create index and add documents
+            // Create backup index
+            await provider.CreateIndexAsync(DocumentType, new IndexDocument("schema"));
+
+            // Add documents to the backup index
             var primaryDocuments = GetPrimaryDocuments();
 
-            var response = await provider.IndexAsync(DocumentType, primaryDocuments);
+            var response = await provider.IndexWithBackupAsync(DocumentType, primaryDocuments);
 
             Assert.NotNull(response);
             Assert.NotNull(response.Items);
@@ -31,17 +34,20 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             Assert.All(response.Items, i => Assert.True(i.Succeeded));
 
 
-            // Update index with new fields and add more documents
+            // Update backup index with new fields and add more documents
             var secondaryDocuments = GetSecondaryDocuments();
-            response = await provider.IndexAsync(DocumentType, secondaryDocuments);
+            response = await provider.IndexWithBackupAsync(DocumentType, secondaryDocuments);
 
             Assert.NotNull(response);
             Assert.NotNull(response.Items);
             Assert.Equal(secondaryDocuments.Count, response.Items.Count);
             Assert.All(response.Items, i => Assert.True(i.Succeeded));
 
+            // Switch from backup to active index
+            await provider.SwapIndexAsync(DocumentType);
 
-            // Remove some documents
+
+            // Remove some documents from the active index
             response = await provider.RemoveAsync(DocumentType, new[] { new IndexDocument("Item-7"), new IndexDocument("Item-8") });
 
             Assert.NotNull(response);

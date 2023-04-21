@@ -2,7 +2,6 @@ using System;
 using Microsoft.Extensions.Options;
 using VirtoCommerce.ElasticSearchModule.Data;
 using VirtoCommerce.SearchModule.Core.Model;
-using VirtoCommerce.SearchModule.Core.Services;
 using Xunit;
 
 namespace VirtoCommerce.ElasticSearchModule.Tests
@@ -11,7 +10,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
     [Trait("Category", "IntegrationTest")]
     public class ElasticSearchTests : SearchProviderTests
     {
-        protected override ISearchProvider GetSearchProvider()
+        protected override ElasticSearchProvider GetSearchProvider()
         {
             var host = Environment.GetEnvironmentVariable("TestElasticsearchHost") ?? "localhost:9200";
             var searchOptions = Options.Create(new SearchOptions { Scope = "test-core", Provider = "ElasticSearch" });

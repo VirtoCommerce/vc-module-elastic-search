@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Moq;
+using VirtoCommerce.ElasticSearchModule.Data;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Settings;
 using VirtoCommerce.SearchModule.Core.Extensions;
 using VirtoCommerce.SearchModule.Core.Model;
-using VirtoCommerce.SearchModule.Core.Services;
 
 namespace VirtoCommerce.ElasticSearchModule.Tests
 {
     public abstract class SearchProviderTestsBase
     {
-        protected abstract ISearchProvider GetSearchProvider();
+        protected abstract ElasticSearchProvider GetSearchProvider();
 
         protected virtual IList<IndexDocument> GetPrimaryDocuments()
         {
@@ -92,9 +92,9 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         {
             var mock = new Mock<ITestSettingsManager>();
 
-            mock.Setup(s => s.GetValue(It.IsAny<string>(), It.IsAny<string>())).Returns((string name, string defaultValue) => defaultValue);
-            mock.Setup(s => s.GetValue(It.IsAny<string>(), It.IsAny<bool>())).Returns((string name, bool defaultValue) => defaultValue);
-            mock.Setup(s => s.GetValue(It.IsAny<string>(), It.IsAny<int>())).Returns((string name, int defaultValue) => defaultValue);
+            mock.Setup(s => s.GetValue(It.IsAny<string>(), It.IsAny<string>())).Returns((string _, string defaultValue) => defaultValue);
+            mock.Setup(s => s.GetValue(It.IsAny<string>(), It.IsAny<bool>())).Returns((string _, bool defaultValue) => defaultValue);
+            mock.Setup(s => s.GetValue(It.IsAny<string>(), It.IsAny<int>())).Returns((string _, int defaultValue) => defaultValue);
             mock.Setup(s => s.GetObjectSettingAsync(It.IsAny<string>(), null, null))
                 .Returns(Task.FromResult(new ObjectSettingEntry()));
 
