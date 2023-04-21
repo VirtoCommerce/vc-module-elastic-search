@@ -17,6 +17,6 @@
         <PackageReference Include="NEST" Version="7.15.2" />
         <PackageReference Include="NEST.JsonNetSerializer" Version="7.15.2" />
         <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-        <PackageReference Include="VirtoCommerce.SearchModule.Core" Version="3.220.0-alpha.700-pt-11306" />
+        <PackageReference Include="VirtoCommerce.SearchModule.Core" Version="3.220.0-alpha.703-pt-11306" />
     </ItemGroup>
 </Project>
