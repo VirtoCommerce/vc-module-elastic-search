@@ -118,42 +118,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         public virtual async Task<IndexingResult> IndexWithBackupAsync(string documentType, IList<IndexDocument> documents)
         {
-            // search and delete duplicate indexes
-            if (GetDeleteDuplicateIndexes())
-            {
-                await DeleteDuplicateIndexes(documentType);
-            }
-
             var result = await InternalIndexAsync(documentType, documents, new IndexingParameters { Reindex = true });
 
             return result;
-        }
-
-        private async Task DeleteDuplicateIndexes(string documentType)
-        {
-            var activeIndexAlias = GetIndexAlias(ActiveIndexAlias, documentType);
-            var activeIndexResponse = await Client.Indices.GetAliasAsync(activeIndexAlias);
-            if (activeIndexResponse.Indices.Count > 1)
-            {
-                var indexNames = activeIndexResponse.Indices.Keys.Select(x => x.Name).ToList();
-                var indices = string.Join(',', indexNames);
-
-                var request = new SearchRequest
-                {
-                    Sorting = new[] { new SortingField { FieldName = KnownDocumentFields.IndexationDate, IsDescending = true } },
-                    Take = 1,
-                };
-
-                var providerRequest = RequestBuilder.BuildRequest(request, indices, new Properties<IProperties>());
-                var providerResponse = await Client.SearchAsync<SearchDocument>(providerRequest);
-
-                var latestIndexName = providerResponse.Hits.FirstOrDefault()?.Index;
-                if (!string.IsNullOrEmpty(latestIndexName))
-                {
-                    var indexesToDelete = string.Join(',', indexNames.Where(x => x != latestIndexName));
-                    await Client.Indices.DeleteAsync(indexesToDelete);
-                }
-            }
         }
 
         public virtual async Task<IndexingResult> IndexPartialAsync(string documentType, IList<IndexDocument> documents)
@@ -175,7 +142,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             try
             {
-                //get backup index by alias and delete is present
+                //get backup index by alias and delete if present
                 var indexAlias = GetIndexAlias(BackupIndexAlias, documentType);
                 var indexResponse = await Client.Indices.GetAliasAsync(indexAlias);
                 var indexName = indexResponse.Indices.FirstOrDefault().Key;
@@ -279,45 +246,16 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         protected virtual async Task<IndexingResult> InternalIndexAsync(string documentType, IList<IndexDocument> documents, IndexingParameters parameters)
         {
-            // use backup index in case of reindexing
-            var alias = parameters.Reindex
-                ? BackupIndexAlias
-                : ActiveIndexAlias;
-            var indexName = GetIndexAlias(alias, documentType);
+            var (indexName, providerDocuments) = await InternalCreateIndexAsync(documentType, documents, parameters);
 
-            var providerFields = new Properties<IProperties>(await GetMappingAsync(indexName)); // Make a copy
-            var oldFieldsCount = providerFields.Count();
-            var providerDocuments = documents.Select(document => ConvertToProviderDocument(document, providerFields)).ToList();
-            var updateMapping = !parameters.PartialUpdate && providerFields.Count() != oldFieldsCount;
-            var indexExists = await IndexExistsAsync(indexName);
+            var bulkDescriptor = parameters.PartialUpdate
+                ? new BulkDescriptor().Index(indexName).UpdateMany(providerDocuments, (descriptor, document) => descriptor.Doc(document))
+                : new BulkDescriptor().Index(indexName).IndexMany(providerDocuments);
 
-            if (!indexExists)
-            {
-                var newIndexName = GetIndexName(documentType, GetRandomIndexSuffix());
-                await CreateIndexAsync(newIndexName, alias: indexName);
-            }
-
-            if (!indexExists || updateMapping)
-            {
-                await UpdateMappingAsync(indexName, providerFields);
-            }
-
-            var bulkDefinition = new BulkDescriptor();
-
-            if (parameters.PartialUpdate)
-            {
-                bulkDefinition.UpdateMany(providerDocuments, (descriptor, document) => descriptor.Doc(document)).Index(indexName);
-            }
-            else
-            {
-                bulkDefinition.IndexMany(providerDocuments).Index(indexName);
-            }
-
-            var bulkResponse = await Client.BulkAsync(bulkDefinition);
+            var bulkResponse = await Client.BulkAsync(bulkDescriptor);
             await Client.Indices.RefreshAsync(indexName);
 
-            var result = new IndexingResult();
-            result.Items = new List<IndexingResultItem>();
+            var result = new IndexingResult { Items = new List<IndexingResultItem>() };
 
             if (!bulkResponse.IsValid)
             {
@@ -337,6 +275,71 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }));
 
             return result;
+        }
+
+        protected virtual async Task<(string indexName, IList<SearchDocument> providerDocuments)> InternalCreateIndexAsync(
+            string documentType,
+            IList<IndexDocument> documents,
+            IndexingParameters parameters)
+        {
+            await DeleteDuplicateIndexes(documentType);
+
+            // Use backup index in case of reindexing
+            var alias = parameters.Reindex
+                ? BackupIndexAlias
+                : ActiveIndexAlias;
+
+            var indexName = GetIndexAlias(alias, documentType);
+            var providerFields = new Properties<IProperties>(await GetMappingAsync(indexName)); // Make a copy
+            var oldFieldsCount = providerFields.Count();
+            var providerDocuments = documents.Select(document => ConvertToProviderDocument(document, providerFields)).ToList();
+            var updateMapping = !parameters.PartialUpdate && providerFields.Count() != oldFieldsCount;
+            var indexExists = await IndexExistsAsync(indexName);
+
+            if (!indexExists)
+            {
+                var newIndexName = GetIndexName(documentType, GetRandomIndexSuffix());
+                await CreateIndexAsync(newIndexName, alias: indexName);
+            }
+
+            if (!indexExists || updateMapping)
+            {
+                await UpdateMappingAsync(indexName, providerFields);
+            }
+
+            return (indexName, providerDocuments);
+        }
+
+        protected virtual async Task DeleteDuplicateIndexes(string documentType)
+        {
+            if (!await SettingsManager.GetValueByDescriptorAsync<bool>(IndexingSettings.DeleteDuplicateIndexes))
+            {
+                return;
+            }
+
+            var activeIndexAlias = GetIndexAlias(ActiveIndexAlias, documentType);
+            var activeIndexResponse = await Client.Indices.GetAliasAsync(activeIndexAlias);
+            if (activeIndexResponse.Indices.Count > 1)
+            {
+                var indexNames = activeIndexResponse.Indices.Keys.Select(x => x.Name).ToList();
+                var indices = string.Join(',', indexNames);
+
+                var request = new SearchRequest
+                {
+                    Sorting = new[] { new SortingField { FieldName = KnownDocumentFields.IndexationDate, IsDescending = true } },
+                    Take = 1,
+                };
+
+                var providerRequest = RequestBuilder.BuildRequest(request, indices, new Properties<IProperties>());
+                var providerResponse = await Client.SearchAsync<SearchDocument>(providerRequest);
+
+                var latestIndexName = providerResponse.Hits.FirstOrDefault()?.Index;
+                if (!string.IsNullOrEmpty(latestIndexName))
+                {
+                    var indexesToDelete = string.Join(',', indexNames.Where(x => x != latestIndexName));
+                    await Client.Indices.DeleteAsync(indexesToDelete);
+                }
+            }
         }
 
         protected virtual SearchDocument ConvertToProviderDocument(IndexDocument document, IProperties properties)
@@ -380,11 +383,20 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     }
 
                     var isCollection = field.IsCollection || field.Values.Count > 1;
+                    object value;
 
-                    var point = field.Value as GeoPoint;
-                    var value = point != null
-                        ? (isCollection ? field.Values.Select(v => ((GeoPoint)v).ToElasticValue()).ToArray() : point.ToElasticValue())
-                        : (isCollection ? field.Values : field.Value);
+                    if (field.Value is GeoPoint point)
+                    {
+                        value = isCollection
+                            ? field.Values.Select(v => ((GeoPoint)v).ToElasticValue()).ToArray()
+                            : point.ToElasticValue();
+                    }
+                    else
+                    {
+                        value = isCollection
+                            ? field.Values
+                            : field.Value;
+                    }
 
                     result.Add(fieldName, value);
                 }
@@ -485,7 +497,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         protected virtual void ConfigureProperty(IProperty property, IndexDocumentField field)
         {
-            if (property != null && !(property is INestedProperty))
+            if (property != null && property is not INestedProperty)
             {
                 if (property is CorePropertyBase baseProperty)
                 {
@@ -502,7 +514,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                         break;
                 }
             }
-            else if (property is NestedProperty nestedProperty)
+            else if (property is INestedProperty nestedProperty)
             {
                 //VP-6107: need to index all objects with type 'Object' as 'Text'
                 //There are Properties.Values.Value in Category/Product
@@ -667,8 +679,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return response.Exists;
         }
 
-        #region Create and configure index
-
         /// <summary>
         /// Creates an index with assigned alias
         /// </summary>
@@ -757,13 +767,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         {
             return SettingsManager.GetValueByDescriptor<int>(IndexingSettings.MaxGram);
         }
-
-        private bool GetDeleteDuplicateIndexes()
-        {
-            return SettingsManager.GetValueByDescriptor<bool>(IndexingSettings.DeleteDuplicateIndexes);
-        }
-
-        #endregion
 
         /// <summary>
         /// Gets random name suffix to attach to index (for automatic creation of backup indices)
