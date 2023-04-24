@@ -518,7 +518,12 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             if (keywordProperty != null)
             {
                 keywordProperty.Index = field.IsFilterable;
-                keywordProperty.Normalizer = "case_insensitive";
+                keywordProperty.Normalizer = "lowercase";
+
+                keywordProperty.Fields = new Properties
+                {
+                    { "raw", new KeywordProperty() },
+                };
             }
         }
 
@@ -654,9 +659,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 .Analysis(a => a
                     .TokenFilters(ConfigureTokenFilters)
                     .Analyzers(ConfigureAnalyzers)
-                        .Normalizers(n => n
-                            .Custom("case_insensitive", cn => cn
-                                .Filters("lowercase"))));
+                    .Normalizers(n => n
+                        .Custom("case_insensitive", cn => cn.Filters("lowercase")) // Obsolete. Left for backward compatibility
+                        .Custom("lowercase", cn => cn.Filters("lowercase"))));
         }
 
         protected virtual AliasesDescriptor ConfigureAliases(AliasesDescriptor aliases, string alias)
