@@ -122,15 +122,16 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
                     new SortingField { FieldName = "non-existent-field" },
                     new SortingField { FieldName = "Name" },
                 },
-                Take = 1,
+                Take = 2,
             };
 
             var response = await provider.SearchAsync(DocumentType, request);
 
-            Assert.Equal(1, response.DocumentsCount);
+            Assert.Equal(2, response.DocumentsCount);
 
-            var productName = response.Documents.First()["name"] as string;
-            Assert.Equal("Black Sox", productName);
+            // Sorting should be case insensitive
+            Assert.Equal("black Sox", response.Documents[0]["name"]);
+            Assert.Equal("Black Sox2", response.Documents[1]["name"]);
 
 
             request = new SearchRequest
@@ -143,8 +144,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
 
             Assert.Equal(1, response.DocumentsCount);
 
-            productName = response.Documents.First()["name"] as string;
-            Assert.Equal("Sample Product", productName);
+            Assert.Equal("Sample Product", response.Documents[0]["name"]);
         }
 
         [Fact]
