@@ -12,6 +12,7 @@ using VirtoCommerce.Platform.Core.Settings;
 using VirtoCommerce.SearchModule.Core.Exceptions;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
+using IndexingSettings = VirtoCommerce.ElasticSearchModule.Data.ModuleConstants.Settings.Indexing;
 using SearchRequest = VirtoCommerce.SearchModule.Core.Model.SearchRequest;
 
 namespace VirtoCommerce.ElasticSearchModule.Data
@@ -737,32 +738,29 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return edgeNGram.MinGram(GetMinGram()).MaxGram(GetMaxGram());
         }
 
-#pragma warning disable S109
         protected virtual int GetFieldsLimit()
         {
-            var fieldsLimit = SettingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.IndexTotalFieldsLimit", 1000);
-            return fieldsLimit;
+            return SettingsManager.GetValueByDescriptor<int>(IndexingSettings.IndexTotalFieldsLimit);
         }
 
         protected virtual string GetTokenFilterName()
         {
-            return SettingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.TokenFilter", EdgeNGramFilterName);
+            return SettingsManager.GetValueByDescriptor<string>(IndexingSettings.TokenFilter);
         }
 
         protected virtual int GetMinGram()
         {
-            return SettingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.NGramTokenFilter.MinGram", 1);
+            return SettingsManager.GetValueByDescriptor<int>(IndexingSettings.MinGram);
         }
 
         protected virtual int GetMaxGram()
         {
-            return SettingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.NGramTokenFilter.MaxGram", 20);
+            return SettingsManager.GetValueByDescriptor<int>(IndexingSettings.MaxGram);
         }
-#pragma warning restore S109
 
         private bool GetDeleteDuplicateIndexes()
         {
-            return SettingsManager.GetValue("VirtoCommerce.Search.ElasticSearch.DeleteDuplicateIndexes", false);
+            return SettingsManager.GetValueByDescriptor<bool>(IndexingSettings.DeleteDuplicateIndexes);
         }
 
         #endregion
