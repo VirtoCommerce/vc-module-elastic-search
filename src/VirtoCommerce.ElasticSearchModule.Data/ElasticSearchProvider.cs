@@ -542,7 +542,10 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             if (properties == null && await IndexExistsAsync(indexName))
             {
                 var providerMapping = await Client.Indices.GetMappingAsync(new GetMappingRequest(indexName));
-                var mapping = providerMapping.GetMappingFor(indexName);
+
+                var mapping = providerMapping.GetMappingFor(indexName) ??
+                              providerMapping.Indices.Values.FirstOrDefault()?.Mappings;
+
                 if (mapping != null)
                 {
                     properties = new Properties<IProperties>(mapping.Properties);
