@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using VirtoCommerce.SearchModule.Core.Model;
+using VirtoCommerce.SearchModule.Core.Services;
 using Xunit;
 
 namespace VirtoCommerce.ElasticSearchModule.Tests
@@ -22,23 +23,45 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             // Create index and add documents
             var primaryDocuments = GetPrimaryDocuments();
 
-            var response = await provider.IndexAsync(DocumentType, primaryDocuments);
+            IndexingResult response;
+            var supportIndexSwap = provider as ISupportIndexSwap;
+
+            if (supportIndexSwap != null)
+            {
+                response = await supportIndexSwap.IndexWithBackupAsync(DocumentType, primaryDocuments);
+            }
+            else
+            {
+                response = await provider.IndexAsync(DocumentType, primaryDocuments);
+            }
 
             Assert.NotNull(response);
             Assert.NotNull(response.Items);
             Assert.Equal(primaryDocuments.Count, response.Items.Count);
             Assert.All(response.Items, i => Assert.True(i.Succeeded));
 
-
             // Update index with new fields and add more documents
             var secondaryDocuments = GetSecondaryDocuments();
-            response = await provider.IndexAsync(DocumentType, secondaryDocuments);
+
+            if (supportIndexSwap != null)
+            {
+                response = await supportIndexSwap.IndexWithBackupAsync(DocumentType, secondaryDocuments);
+            }
+            else
+            {
+                response = await provider.IndexAsync(DocumentType, secondaryDocuments);
+            }
 
             Assert.NotNull(response);
             Assert.NotNull(response.Items);
             Assert.Equal(secondaryDocuments.Count, response.Items.Count);
             Assert.All(response.Items, i => Assert.True(i.Succeeded));
 
+            // Switch from backup to active index
+            if (supportIndexSwap != null)
+            {
+                await supportIndexSwap.SwapIndexAsync(DocumentType);
+            }
 
             // Remove some documents
             response = await provider.RemoveAsync(DocumentType, new[] { new IndexDocument("Item-7"), new IndexDocument("Item-8") });
