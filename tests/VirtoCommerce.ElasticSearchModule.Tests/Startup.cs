@@ -5,7 +5,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests;
 
 public class Startup
 {
-    public void ConfigureHost(IHostBuilder hostBuilder)
+    public static void ConfigureHost(IHostBuilder hostBuilder)
     {
         var configuration = new ConfigurationBuilder()
             .AddUserSecrets<ElasticSearchTests>()

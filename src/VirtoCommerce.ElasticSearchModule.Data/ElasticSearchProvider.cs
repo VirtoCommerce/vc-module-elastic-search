@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
@@ -150,7 +151,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 if (indexName != null)
                 {
                     var response = await Client.Indices.DeleteAsync(indexName);
-                    if (!response.IsValid && response.ApiCall.HttpStatusCode != 404)
+                    if (!response.IsValid && response.ApiCall.HttpStatusCode != (int)HttpStatusCode.NotFound)
                     {
                         throw new SearchException(response.DebugInformation);
                     }
@@ -613,7 +614,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var mappingResponse = await Client.Indices.GetMappingAsync(new GetMappingRequest(indexName));
 
             var mapping = mappingResponse.GetMappingFor(indexName) ??
-                mappingResponse.Indices.Values.FirstOrDefault()?.Mappings;
+                          mappingResponse.Indices.Values.FirstOrDefault()?.Mappings;
 
             return mapping?.Properties;
         }
@@ -708,8 +709,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     .TokenFilters(ConfigureTokenFilters)
                     .Analyzers(ConfigureAnalyzers)
                     .Normalizers(n => n
-                        .Custom("case_insensitive", cn => cn.Filters("lowercase")) // Obsolete. Left for backward compatibility
-                        .Custom("lowercase", cn => cn.Filters("lowercase"))));
+                        .Custom("lowercase", cn => cn
+                            .Filters("lowercase"))));
         }
 
         protected virtual AliasesDescriptor ConfigureAliases(AliasesDescriptor aliases, string alias)

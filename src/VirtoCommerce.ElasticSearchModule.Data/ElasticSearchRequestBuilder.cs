@@ -10,7 +10,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 {
     public class ElasticSearchRequestBuilder
     {
-        // Used to map 'score' sort field to Elastic Search _score sorting field 
+        // Used to map 'score' sorting field to Elastic Search _score sorting field 
         protected const string Score = "score";
 
         public virtual ISearchRequest BuildRequest(SearchRequest request, string indexName, IProperties availableFields)
@@ -188,7 +188,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var termValues = termFilter.Values;
 
             var field = availableFields.Where(kvp => kvp.Key.Name.EqualsInvariant(termFilter.FieldName)).Select(kvp => kvp.Value).FirstOrDefault();
-            if (field?.Type?.EqualsInvariant("boolean") == true)
+            if (field?.Type?.EqualsInvariant(FieldType.Boolean.ToString()) == true)
             {
                 termValues = termValues.Select(v => v switch
                 {

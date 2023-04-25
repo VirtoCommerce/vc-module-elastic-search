@@ -143,7 +143,6 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             response = await provider.SearchAsync(DocumentType, request);
 
             Assert.Equal(1, response.DocumentsCount);
-
             Assert.Equal("Sample Product", response.Documents[0]["name"]);
         }
 
