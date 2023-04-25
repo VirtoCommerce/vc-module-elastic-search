@@ -1,4 +1,4 @@
-using System.Linq;
+using FluentAssertions;
 using VirtoCommerce.ElasticSearchModule.Data.Extensions;
 using Xunit;
 using static VirtoCommerce.ElasticSearchModule.Tests.SearchProviderTestsBase;
@@ -10,17 +10,32 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         [Fact]
         public void GetPropertyNames_GetAllNamesFromAnObjectInDeepSeven()
         {
-            var objects = new[] { new TestObjectValue(true, "Boolean"), new TestObjectValue(99.99m, "Number") };
+            var obj = new TestObjectValue();
+            obj.AddProperty(true, "Boolean");
+            obj.AddProperty(99.99m, "Number");
 
-            var res = objects.SelectMany(o => o.GetPropertyNames<object>(7)).Distinct().ToArray();
+            var names1 = obj.GetPropertyNames<object>(7);
 
-            Assert.Equal(
-                new[]
-                {
-                    "testProperties.values.value",
-                    "testProperties.valueInProperty.value",
-                    "testProperties.value"
-                }, res);
+            names1.Should().BeEquivalentTo(
+                "testProperties.array.value",
+                "testProperties.list.value",
+                "testProperties.valueInProperty.value",
+                "testProperties.value"
+            );
+
+
+            obj.Value = new PropertyValue { Value = 99.99m, ValueType = "Number" };
+
+            var names2 = obj.GetPropertyNames<object>(7);
+
+            // Should return one more name from the entity that was null earlier
+            names2.Should().BeEquivalentTo(
+                "testProperties.array.value",
+                "testProperties.list.value",
+                "testProperties.valueInProperty.value",
+                "testProperties.value",
+                "value.value"
+            );
         }
     }
 }
