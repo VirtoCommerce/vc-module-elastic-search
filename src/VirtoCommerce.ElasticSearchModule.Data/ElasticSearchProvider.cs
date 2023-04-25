@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
@@ -155,7 +156,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 if (indexName != null)
                 {
                     var response = await Client.Indices.DeleteAsync(indexName);
-                    if (!response.IsValid && response.ApiCall.HttpStatusCode != 404)
+                    if (!response.IsValid && response.ApiCall.HttpStatusCode != (int)HttpStatusCode.NotFound)
                     {
                         throw new SearchException(response.DebugInformation);
                     }
@@ -684,8 +685,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return response.Exists;
         }
 
-        #region Create and configure index
-
         /// <summary>
         /// Creates an index with assigned alias
         /// </summary>
@@ -774,8 +773,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         {
             return SettingsManager.GetValueByDescriptor<int>(IndexingSettings.MaxGram);
         }
-
-        #endregion
 
         /// <summary>
         /// Gets random name suffix to attach to index (for automatic creation of backup indices)

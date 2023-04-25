@@ -36,7 +36,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data.Extensions
             return _properties[baseType];
         }
 
-        static IEnumerable<string> GetPropertyNamesInner<T>(this object obj, int deep)
+        private static IEnumerable<string> GetPropertyNamesInner<T>(this object obj, int deep)
         {
             if (obj == null || obj.GetType().IsPrimitive || deep <= 0)
             {
