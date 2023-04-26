@@ -34,31 +34,27 @@ namespace VirtoCommerce.ElasticSearchModule.Data.Extensions
 
             foreach (var property in properties)
             {
-                var propertyName = parentName == null
-                    ? property.Name.ToCamelCase()
-                    : $"{parentName}.{property.Name.ToCamelCase()}";
-
                 if (property.PropertyType == typeof(T))
                 {
+                    var propertyName = GetFullName(parentName, property.Name);
                     result.Add(propertyName);
+                    continue;
                 }
-                else
+
+                var value = property.GetValue(obj, null);
+
+                if (value is IEnumerable enumerable)
                 {
-                    var propValue = property.GetValue(obj, null);
-                    if (propValue != null)
+                    var newParentName = GetFullName(parentName, property.Name);
+                    foreach (var item in enumerable)
                     {
-                        if (propValue is IEnumerable enumerable)
-                        {
-                            foreach (var child in enumerable)
-                            {
-                                GetPropertyNamesInner<T>(child, deep - 1, propertyName, result);
-                            }
-                        }
-                        else if (property.PropertyType.Assembly == type.Assembly)
-                        {
-                            GetPropertyNamesInner<T>(propValue, deep - 1, propertyName, result);
-                        }
+                        GetPropertyNamesInner<T>(item, deep - 1, newParentName, result);
                     }
+                }
+                else if (value != null && property.PropertyType.Assembly == type.Assembly)
+                {
+                    var newParentName = GetFullName(parentName, property.Name);
+                    GetPropertyNamesInner<T>(value, deep - 1, newParentName, result);
                 }
             }
         }
@@ -69,6 +65,13 @@ namespace VirtoCommerce.ElasticSearchModule.Data.Extensions
                 !type.IsPrimitive &&
                 type != typeof(string) &&
                 !type.IsAssignableTo(typeof(IEnumerable<string>));
+        }
+
+        private static string GetFullName(string parentName, string name)
+        {
+            return string.IsNullOrEmpty(parentName)
+                ? name.ToCamelCase()
+                : $"{parentName}.{name.ToCamelCase()}";
         }
 
         private static string ToCamelCase(this string str) =>

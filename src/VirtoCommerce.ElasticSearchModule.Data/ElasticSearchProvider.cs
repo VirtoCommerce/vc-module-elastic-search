@@ -373,12 +373,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     if (!properties.ContainsKey(fieldName))
                     {
                         // Create new property mapping
-#pragma warning disable CS0618 // Type or member is obsolete
-                        var providerField = field.ValueType == IndexDocumentFieldValueType.Undefined
-                            ? CreateProviderField(field)
-                            : CreateProviderFieldByType(field);
-#pragma warning restore CS0618 // Type or member is obsolete
-
+                        var providerField = CreateProviderFieldByType(field);
                         ConfigureProperty(providerField, field);
                         properties.Add(fieldName, providerField);
                     }
@@ -406,94 +401,77 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
+        protected virtual IProperty CreateProviderFieldByType(IndexDocumentField field)
+        {
+            return field.ValueType switch
+            {
+#pragma warning disable CS0618 // Type or member is obsolete
+                IndexDocumentFieldValueType.Undefined => CreateProviderField(field),
+#pragma warning restore CS0618 // Type or member is obsolete
+                IndexDocumentFieldValueType.String when field.IsFilterable => new KeywordProperty(),
+                IndexDocumentFieldValueType.String when !field.IsFilterable => new TextProperty(),
+                IndexDocumentFieldValueType.Char => new KeywordProperty(),
+                IndexDocumentFieldValueType.Guid => new KeywordProperty(),
+                IndexDocumentFieldValueType.Complex => new NestedProperty(),
+                IndexDocumentFieldValueType.Integer => new NumberProperty(NumberType.Integer),
+                IndexDocumentFieldValueType.Short => new NumberProperty(NumberType.Short),
+                IndexDocumentFieldValueType.Byte => new NumberProperty(NumberType.Byte),
+                IndexDocumentFieldValueType.Long => new NumberProperty(NumberType.Long),
+                IndexDocumentFieldValueType.Float => new NumberProperty(NumberType.Float),
+                IndexDocumentFieldValueType.Decimal => new NumberProperty(NumberType.Double),
+                IndexDocumentFieldValueType.Double => new NumberProperty(NumberType.Double),
+                IndexDocumentFieldValueType.DateTime => new DateProperty(),
+                IndexDocumentFieldValueType.Boolean => new BooleanProperty(),
+                IndexDocumentFieldValueType.GeoPoint => new GeoPointProperty(),
+                _ => throw new ArgumentException($"Field '{field.Name}' has unsupported type '{field.ValueType}'", nameof(field))
+            };
+        }
+
         [Obsolete("Left for backward compatibility.")]
         protected virtual IProperty CreateProviderField(IndexDocumentField field)
         {
-            var fieldType = field.Value?.GetType() ?? typeof(object);
-
-            if (fieldType == typeof(string))
+            if (field.Value == null)
             {
-                return field.IsFilterable
-                    ? new KeywordProperty()
-                    : new TextProperty();
+                throw new ArgumentException($"Field '{field.Name}' has no value", nameof(field));
             }
 
-            if (typeof(IEntity).IsAssignableFrom(fieldType) || (fieldType.IsArray && typeof(IEntity).IsAssignableFrom(fieldType.GetElementType())))
+            var fieldType = field.Value.GetType();
+
+            if (IsComplexType(fieldType))
             {
                 return new NestedProperty();
             }
 
-            switch (fieldType.Name)
+            return fieldType.Name switch
             {
-                case "Int32":
-                case "UInt16":
-                    return new NumberProperty(NumberType.Integer);
-                case "Int16":
-                case "Byte":
-                    return new NumberProperty(NumberType.Short);
-                case "SByte":
-                    return new NumberProperty(NumberType.Byte);
-                case "Int64":
-                case "UInt32":
-                case "TimeSpan":
-                    return new NumberProperty(NumberType.Long);
-                case "Single":
-                    return new NumberProperty(NumberType.Float);
-                case "Decimal":
-                case "Double":
-                case "UInt64":
-                    return new NumberProperty(NumberType.Double);
-                case "DateTime":
-                case "DateTimeOffset":
-                    return new DateProperty();
-                case "Boolean":
-                    return new BooleanProperty();
-                case "Char":
-                case "Guid":
-                    return new KeywordProperty();
-                case "GeoPoint":
-                    return new GeoPointProperty();
-            }
-
-            throw new ArgumentException($"Field {field.Name} has unsupported type {fieldType}", nameof(field));
+                "String" => field.IsFilterable ? new KeywordProperty() : new TextProperty(),
+                "Int32" => new NumberProperty(NumberType.Integer),
+                "UInt16" => new NumberProperty(NumberType.Integer),
+                "Int16" => new NumberProperty(NumberType.Short),
+                "Byte" => new NumberProperty(NumberType.Short),
+                "SByte" => new NumberProperty(NumberType.Byte),
+                "Int64" => new NumberProperty(NumberType.Long),
+                "UInt32" => new NumberProperty(NumberType.Long),
+                "TimeSpan" => new NumberProperty(NumberType.Long),
+                "Single" => new NumberProperty(NumberType.Float),
+                "Decimal" => new NumberProperty(NumberType.Double),
+                "Double" => new NumberProperty(NumberType.Double),
+                "UInt64" => new NumberProperty(NumberType.Double),
+                "DateTime" => new DateProperty(),
+                "DateTimeOffset" => new DateProperty(),
+                "Boolean" => new BooleanProperty(),
+                "Char" => new KeywordProperty(),
+                "Guid" => new KeywordProperty(),
+                "GeoPoint" => new GeoPointProperty(),
+                _ => throw new ArgumentException($"Field '{field.Name}' has unsupported type '{fieldType}'", nameof(field))
+            };
         }
 
-        protected virtual IProperty CreateProviderFieldByType(IndexDocumentField field)
+        private static bool IsComplexType(Type type)
         {
-            switch (field.ValueType)
-            {
-                case IndexDocumentFieldValueType.String when field.IsFilterable:
-                    return new KeywordProperty();
-                case IndexDocumentFieldValueType.String when !field.IsFilterable:
-                    return new TextProperty();
-                case IndexDocumentFieldValueType.Char:
-                case IndexDocumentFieldValueType.Guid:
-                    return new KeywordProperty();
-                case IndexDocumentFieldValueType.Complex:
-                    return new NestedProperty();
-                case IndexDocumentFieldValueType.Integer:
-                    return new NumberProperty(NumberType.Integer);
-                case IndexDocumentFieldValueType.Short:
-                    return new NumberProperty(NumberType.Short);
-                case IndexDocumentFieldValueType.Byte:
-                    return new NumberProperty(NumberType.Byte);
-                case IndexDocumentFieldValueType.Long:
-                    return new NumberProperty(NumberType.Long);
-                case IndexDocumentFieldValueType.Float:
-                    return new NumberProperty(NumberType.Float);
-                case IndexDocumentFieldValueType.Decimal:
-                    return new NumberProperty(NumberType.Double);
-                case IndexDocumentFieldValueType.Double:
-                    return new NumberProperty(NumberType.Double);
-                case IndexDocumentFieldValueType.DateTime:
-                    return new DateProperty();
-                case IndexDocumentFieldValueType.Boolean:
-                    return new BooleanProperty();
-                case IndexDocumentFieldValueType.GeoPoint:
-                    return new GeoPointProperty();
-                default:
-                    throw new ArgumentException($"Field {field.Name} has unsupported type {field.ValueType}", nameof(field));
-            }
+            return
+                type.IsAssignableTo(typeof(IEntity)) ||
+                type.IsAssignableTo(typeof(IEnumerable<IEntity>));
         }
 
         protected virtual void ConfigureProperty(IProperty property, IndexDocumentField field)

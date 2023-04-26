@@ -5,6 +5,7 @@ using static VirtoCommerce.ElasticSearchModule.Tests.SearchProviderTestsBase;
 
 namespace VirtoCommerce.ElasticSearchModule.Tests
 {
+    [Trait("Category", "Unit")]
     public class PropertyTests
     {
         [Fact]

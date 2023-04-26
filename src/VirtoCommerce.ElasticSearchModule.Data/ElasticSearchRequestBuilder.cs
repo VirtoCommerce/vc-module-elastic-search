@@ -20,20 +20,24 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 Query = GetQuery(request),
                 PostFilter = GetFilters(request, availableFields),
                 Aggregations = GetAggregations(request, availableFields),
-                Sort = GetSorting(request?.Sorting),
-                From = request?.Skip,
-                Size = request?.Take,
-                TrackScores = request?.Sorting?.Any(x => x.FieldName.EqualsInvariant(Score)) ?? false
             };
 
-            if (request?.IncludeFields != null && request.IncludeFields.Any())
+            if (request != null)
             {
-                result.Source = GetSourceFilters(request);
-            }
+                result.Sort = GetSorting(request.Sorting);
+                result.From = request.Skip;
+                result.Size = request.Take;
+                result.TrackScores = request.Sorting?.Any(x => x.FieldName.EqualsInvariant(Score)) ?? false;
 
-            if (request?.Take == 1)
-            {
-                result.TrackTotalHits = true;
+                if (request.IncludeFields?.Any() == true)
+                {
+                    result.Source = GetSourceFilters(request);
+                }
+
+                if (request.Take == 1)
+                {
+                    result.TrackTotalHits = true;
+                }
             }
 
             return result;
