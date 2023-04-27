@@ -1,5 +1,6 @@
 using System;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using VirtoCommerce.ElasticSearchModule.Data;
 using VirtoCommerce.SearchModule.Core.Model;
@@ -26,8 +27,10 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             elasticOptions.Value.Server ??= Environment.GetEnvironmentVariable("TestElasticsearchHost") ?? "localhost:9200";
             var connectionSettings = new ElasticSearchConnectionSettings(elasticOptions);
             var client = new ElasticSearchClient(connectionSettings);
+            var loggerFactory = LoggerFactory.Create(builder => { builder.ClearProviders(); });
+            var logger = loggerFactory.CreateLogger<ElasticSearchProvider>();
 
-            var provider = new ElasticSearchProvider(searchOptions, GetSettingsManager(), client, new ElasticSearchRequestBuilder());
+            var provider = new ElasticSearchProvider(searchOptions, GetSettingsManager(), client, new ElasticSearchRequestBuilder(), logger);
 
             return provider;
         }

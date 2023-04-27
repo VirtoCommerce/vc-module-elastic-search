@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
 using VirtoCommerce.ElasticSearchModule.Data.Extensions;
@@ -35,11 +36,14 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         private readonly Regex _specialSymbols = new("[/+_=]", RegexOptions.Compiled);
 
+        private readonly ILogger<ElasticSearchProvider> _logger;
+
         public ElasticSearchProvider(
             IOptions<SearchOptions> searchOptions,
             ISettingsManager settingsManager,
             IElasticClient client,
-            ElasticSearchRequestBuilder requestBuilder)
+            ElasticSearchRequestBuilder requestBuilder,
+            ILogger<ElasticSearchProvider> logger)
         {
             if (searchOptions == null)
             {
@@ -51,6 +55,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             RequestBuilder = requestBuilder;
             ServerUrl = Client.ConnectionSettings.ConnectionPool.Nodes.First().Uri;
             _searchOptions = searchOptions.Value;
+            _logger = logger;
         }
 
         protected IElasticClient Client { get; }
@@ -68,52 +73,57 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 throw new ArgumentNullException(nameof(documentType));
             }
 
-            try
+            // get active index and alias
+            var activeIndexAlias = GetIndexAlias(ActiveIndexAlias, documentType);
+
+            // if no active index found - check that default (active) index, if not create, if does assign the alias to it
+            var indexExists = await IndexExistsAsync(activeIndexAlias);
+            if (!indexExists)
             {
-                // get active index and alias
-                var activeIndexAlias = GetIndexAlias(ActiveIndexAlias, documentType);
-
-                // if no active index found - check that default (active) index, if not create, if does assign the alias to it
-                var indexExists = await IndexExistsAsync(activeIndexAlias);
-                if (!indexExists)
+                var indexName = GetIndexName(documentType);
+                var indexExits = await IndexExistsAsync(indexName);
+                if (!indexExits)
                 {
-                    var indexName = GetIndexName(documentType);
-                    var indexExits = await IndexExistsAsync(indexName);
-                    if (!indexExits)
-                    {
-                        // create new index with alias
-                        await CreateIndexAsync(indexName, activeIndexAlias);
-                    }
-                    else
-                    {
-                        // attach alias to default index
-                        await Client.Indices.PutAliasAsync(indexName, activeIndexAlias);
-                    }
-
+                    // create new index with alias
+                    await CreateIndexAsync(indexName, activeIndexAlias);
+                }
+                else
+                {
+                    // attach alias to default index
+                    await Client.Indices.PutAliasAsync(indexName, activeIndexAlias);
                 }
 
-                var activeIndexResponse = await Client.Indices.GetAliasAsync(activeIndexAlias);
-                var activeIndexName = activeIndexResponse.Indices.FirstOrDefault().Key;
-
-                // get backup index and alias
-                var backupIndexAlias = GetIndexAlias(BackupIndexAlias, documentType);
-                // swap
-                await Client.Indices.DeleteAliasAsync(activeIndexName, activeIndexAlias);
-
-                if (await IndexExistsAsync(backupIndexAlias))
-                {
-                    var backupIndexResponse = await Client.Indices.GetAliasAsync(backupIndexAlias);
-                    var backupIndexName = backupIndexResponse.Indices.FirstOrDefault().Key;
-
-                    await Client.Indices.DeleteAliasAsync(backupIndexName, backupIndexAlias);
-                    await Client.Indices.PutAliasAsync(backupIndexName, activeIndexAlias);
-                }
-
-                await Client.Indices.PutAliasAsync(activeIndexName, backupIndexAlias);
             }
-            catch (Exception ex)
+
+            // swap start
+            var activeIndexResponse = await Client.GetIndicesPointingToAliasAsync(activeIndexAlias);
+            var activeIndexName = activeIndexResponse?.FirstOrDefault();
+            if (string.IsNullOrEmpty(activeIndexName))
             {
-                ThrowException("Failed to swap indexes", ex);
+                return;
+            }
+
+            var bulkAliasDescriptor = new BulkAliasDescriptor();
+
+            bulkAliasDescriptor.Remove(x => x.Index(activeIndexName).Alias(activeIndexAlias));
+
+            var backupIndexAlias = GetIndexAlias(BackupIndexAlias, documentType);
+            var backupIndexResponse = await Client.GetIndicesPointingToAliasAsync(backupIndexAlias);
+            var backupIndexName = backupIndexResponse?.FirstOrDefault();
+
+            if (!string.IsNullOrEmpty(backupIndexName))
+            {
+                bulkAliasDescriptor.Remove(x => x.Index(backupIndexName).Alias(backupIndexAlias));
+                bulkAliasDescriptor.Add(a => a.Index(backupIndexName).Alias(activeIndexAlias));
+            }
+
+            bulkAliasDescriptor.Add(a => a.Index(activeIndexName).Alias(backupIndexAlias));
+
+            var swapResponse = await Client.Indices.BulkAliasAsync(bulkAliasDescriptor);
+
+            if (!swapResponse.IsValid)
+            {
+                ThrowException($"Failed to swap indexes for the document type: {documentType}", swapResponse.OriginalException);
             }
         }
 
@@ -229,19 +239,26 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         /// </summary>
         public void AddActiveAlias(IEnumerable<string> documentTypes)
         {
-            foreach (var documentType in documentTypes)
+            try
             {
-                var indexAlias = GetIndexAlias(ActiveIndexAlias, documentType);
-                if (IndexExists(indexAlias))
+                foreach (var documentType in documentTypes)
                 {
-                    continue;
-                }
+                    var indexAlias = GetIndexAlias(ActiveIndexAlias, documentType);
+                    if (IndexExists(indexAlias))
+                    {
+                        continue;
+                    }
 
-                var indexName = GetIndexName(documentType);
-                if (IndexExists(indexName))
-                {
-                    Client.Indices.PutAlias(indexName, indexAlias);
+                    var indexName = GetIndexName(documentType);
+                    if (IndexExists(indexName))
+                    {
+                        Client.Indices.PutAlias(indexName, indexAlias);
+                    }
                 }
+            }
+            catch (SearchException ex)
+            {
+                _logger.LogError(ex, $"Error while putting an active alias on a default index at {nameof(AddActiveAlias)}. Possible fail on Elastic server side at IndexExists check.");
             }
         }
 
@@ -647,12 +664,22 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected virtual async Task<bool> IndexExistsAsync(string indexName)
         {
             var response = await Client.Indices.ExistsAsync(indexName);
+            if (response.ApiCall?.Success == false)
+            {
+                ThrowException($"Index check call failed for index: {indexName}", response.OriginalException);
+            }
+
             return response.Exists;
         }
 
         protected virtual bool IndexExists(string indexName)
         {
             var response = Client.Indices.Exists(indexName);
+            if (response.ApiCall?.Success == false)
+            {
+                ThrowException($"Index check call failed for index: {indexName}", response.OriginalException);
+            }
+
             return response.Exists;
         }
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
 using VirtoCommerce.ElasticSearchModule.Data;
@@ -48,8 +49,10 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             var elasticOptions = Options.Create(new ElasticSearchOptions { Server = "non-empty-string" });
             var connectionSettings = new ElasticSearchConnectionSettings(elasticOptions);
             var client = new ElasticSearchClient(connectionSettings);
+            var loggerFactory = LoggerFactory.Create(builder => { builder.ClearProviders(); });
+            var logger = loggerFactory.CreateLogger<TestElasticsearchProvider>();
 
-            var provider = new TestElasticsearchProvider(searchOptions, GetSettingsManager(), client, new ElasticSearchRequestBuilder());
+            var provider = new TestElasticsearchProvider(searchOptions, GetSettingsManager(), client, new ElasticSearchRequestBuilder(), logger);
 
             return provider;
         }
@@ -64,8 +67,9 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
                 IOptions<SearchOptions> searchOptions,
                 ISettingsManager settingsManager,
                 IElasticClient client,
-                ElasticSearchRequestBuilder requestBuilder)
-                : base(searchOptions, settingsManager, client, requestBuilder)
+                ElasticSearchRequestBuilder requestBuilder,
+                ILogger<TestElasticsearchProvider> logger)
+                : base(searchOptions, settingsManager, client, requestBuilder, logger)
             {
             }
 
