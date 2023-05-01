@@ -125,6 +125,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             {
                 ThrowException($"Failed to swap indexes for the document type: {documentType}", swapResponse.OriginalException);
             }
+
+            RemoveMappingFromCache(backupIndexAlias);
+            RemoveMappingFromCache(activeIndexAlias);
         }
 
         public virtual async Task<IndexingResult> IndexWithBackupAsync(string documentType, IList<IndexDocument> documents)
