@@ -317,7 +317,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     var aggregationId = aggregation.Id ?? aggregation.FieldName;
                     var fieldName = ElasticSearchHelper.ToElasticFieldName(aggregation.FieldName);
 
-                    if (IsKeywordField(fieldName, availableFields))
+                    if (IsRawKeywordField(fieldName, availableFields))
                     {
                         fieldName += ".raw";
                     }
@@ -338,14 +338,13 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result.Any() ? new AggregationDictionary(result) : null;
         }
 
-        protected static bool IsKeywordField(string fieldName, IProperties availableFields)
+        protected static bool IsRawKeywordField(string fieldName, IProperties availableFields)
         {
-            var keywordFieldType = FieldType.Keyword.ToString();
-
             return availableFields
                 .Any(kvp =>
                     kvp.Key.Name.EqualsInvariant(fieldName) &&
-                    kvp.Value.Type.EqualsInvariant(keywordFieldType));
+                    kvp.Value is KeywordProperty keywordProperty &&
+                    keywordProperty.Fields?.ContainsKey("raw") == true);
         }
 
         protected virtual void AddTermAggregationRequest(IDictionary<string, AggregationContainer> container, string aggregationId, string field, QueryContainer filter, TermAggregationRequest termAggregationRequest)
