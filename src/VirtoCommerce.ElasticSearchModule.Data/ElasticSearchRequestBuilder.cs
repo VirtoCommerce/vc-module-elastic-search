@@ -10,30 +10,34 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 {
     public class ElasticSearchRequestBuilder
     {
-        // Used to map 'score' sort field to Elastic Search _score sorting field 
-        private const string Score = "score";
+        // Used to map 'score' sorting field to Elastic Search _score sorting field 
+        protected const string Score = "score";
 
-        public virtual ISearchRequest BuildRequest(SearchRequest request, string indexName, Properties<IProperties> availableFields)
+        public virtual ISearchRequest BuildRequest(SearchRequest request, string indexName, IProperties availableFields)
         {
             var result = new Nest.SearchRequest(indexName)
             {
                 Query = GetQuery(request),
                 PostFilter = GetFilters(request, availableFields),
                 Aggregations = GetAggregations(request, availableFields),
-                Sort = GetSorting(request?.Sorting),
-                From = request?.Skip,
-                Size = request?.Take,
-                TrackScores = request?.Sorting?.Any(x => x.FieldName.EqualsInvariant(Score)) ?? false
             };
 
-            if (request?.IncludeFields != null && request.IncludeFields.Any())
+            if (request != null)
             {
-                result.Source = GetSourceFilters(request);
-            }
+                result.Sort = GetSorting(request.Sorting);
+                result.From = request.Skip;
+                result.Size = request.Take;
+                result.TrackScores = request.Sorting?.Any(x => x.FieldName.EqualsInvariant(Score)) ?? false;
 
-            if (request?.Take == 1)
-            {
-                result.TrackTotalHits = true;
+                if (request.IncludeFields?.Any() == true)
+                {
+                    result.Source = GetSourceFilters(request);
+                }
+
+                if (request.Take == 1)
+                {
+                    result.TrackTotalHits = true;
+                }
             }
 
             return result;
@@ -41,13 +45,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         protected virtual SourceFilter GetSourceFilters(SearchRequest request)
         {
-            SourceFilter result = null;
-            if (request?.IncludeFields != null)
-            {
-                return new SourceFilter { Includes = request.IncludeFields.ToArray() };
-            }
-
-            return result;
+            return request?.IncludeFields != null
+                ? new SourceFilter { Includes = request.IncludeFields.ToArray() }
+                : null;
         }
 
         protected virtual QueryContainer GetQuery(SearchRequest request)
@@ -119,12 +119,12 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
-        protected virtual QueryContainer GetFilters(SearchRequest request, Properties<IProperties> availableFields)
+        protected virtual QueryContainer GetFilters(SearchRequest request, IProperties availableFields)
         {
             return GetFilterQueryRecursive(request?.Filter, availableFields);
         }
 
-        protected virtual QueryContainer GetFilterQueryRecursive(IFilter filter, Properties<IProperties> availableFields)
+        protected virtual QueryContainer GetFilterQueryRecursive(IFilter filter, IProperties availableFields)
         {
             QueryContainer result = null;
 
@@ -187,12 +187,12 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             };
         }
 
-        protected virtual QueryContainer CreateTermFilter(TermFilter termFilter, Properties<IProperties> availableFields)
+        protected virtual QueryContainer CreateTermFilter(TermFilter termFilter, IProperties availableFields)
         {
             var termValues = termFilter.Values;
 
             var field = availableFields.Where(kvp => kvp.Key.Name.EqualsInvariant(termFilter.FieldName)).Select(kvp => kvp.Value).FirstOrDefault();
-            if (field?.Type?.EqualsInvariant("boolean") == true)
+            if (field?.Type?.EqualsInvariant(FieldType.Boolean.ToString()) == true)
             {
                 termValues = termValues.Select(v => v switch
                 {
@@ -232,7 +232,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             };
         }
 
-        protected virtual QueryContainer CreateNotFilter(NotFilter notFilter, Properties<IProperties> availableFields)
+        protected virtual QueryContainer CreateNotFilter(NotFilter notFilter, IProperties availableFields)
         {
             QueryContainer result = null;
 
@@ -244,7 +244,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
-        protected virtual QueryContainer CreateAndFilter(AndFilter andFilter, Properties<IProperties> availableFields)
+        protected virtual QueryContainer CreateAndFilter(AndFilter andFilter, IProperties availableFields)
         {
             QueryContainer result = null;
 
@@ -259,7 +259,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
-        protected virtual QueryContainer CreateOrFilter(OrFilter orFilter, Properties<IProperties> availableFields)
+        protected virtual QueryContainer CreateOrFilter(OrFilter orFilter, IProperties availableFields)
         {
             QueryContainer result = null;
 
@@ -306,7 +306,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return termRangeQuery;
         }
 
-        protected virtual AggregationDictionary GetAggregations(SearchRequest request, Properties<IProperties> availableFields)
+        protected virtual AggregationDictionary GetAggregations(SearchRequest request, IProperties availableFields)
         {
             var result = new Dictionary<string, AggregationContainer>();
 
@@ -316,16 +316,19 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 {
                     var aggregationId = aggregation.Id ?? aggregation.FieldName;
                     var fieldName = ElasticSearchHelper.ToElasticFieldName(aggregation.FieldName);
+
+                    if (IsRawKeywordField(fieldName, availableFields))
+                    {
+                        fieldName += ".raw";
+                    }
+
                     var filter = GetFilterQueryRecursive(aggregation.Filter, availableFields);
 
-                    var termAggregationRequest = aggregation as TermAggregationRequest;
-                    var rangeAggregationRequest = aggregation as RangeAggregationRequest;
-
-                    if (termAggregationRequest != null)
+                    if (aggregation is TermAggregationRequest termAggregationRequest)
                     {
                         AddTermAggregationRequest(result, aggregationId, fieldName, filter, termAggregationRequest);
                     }
-                    else if (rangeAggregationRequest != null)
+                    else if (aggregation is RangeAggregationRequest rangeAggregationRequest)
                     {
                         AddRangeAggregationRequest(result, aggregationId, fieldName, filter, rangeAggregationRequest.Values);
                     }
@@ -333,6 +336,15 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
 
             return result.Any() ? new AggregationDictionary(result) : null;
+        }
+
+        protected static bool IsRawKeywordField(string fieldName, IProperties availableFields)
+        {
+            return availableFields
+                .Any(kvp =>
+                    kvp.Key.Name.EqualsInvariant(fieldName) &&
+                    kvp.Value is KeywordProperty keywordProperty &&
+                    keywordProperty.Fields?.ContainsKey("raw") == true);
         }
 
         protected virtual void AddTermAggregationRequest(IDictionary<string, AggregationContainer> container, string aggregationId, string field, QueryContainer filter, TermAggregationRequest termAggregationRequest)
@@ -379,7 +391,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected virtual void AddRangeAggregationRequest(Dictionary<string, AggregationContainer> container, string aggregationId, string fieldName, IEnumerable<RangeAggregationRequestValue> values)
         {
             if (values == null)
+            {
                 return;
+            }
 
             foreach (var value in values)
             {

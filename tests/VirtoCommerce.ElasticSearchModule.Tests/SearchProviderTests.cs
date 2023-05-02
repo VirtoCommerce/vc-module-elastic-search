@@ -1,11 +1,12 @@
 using System.Linq;
 using System.Threading.Tasks;
 using VirtoCommerce.SearchModule.Core.Model;
+using VirtoCommerce.SearchModule.Core.Services;
 using Xunit;
 
 namespace VirtoCommerce.ElasticSearchModule.Tests
 {
-    [TestCaseOrderer(PriorityTestCaseOrderer.TypeName, PriorityTestCaseOrderer.AssembyName)]
+    [TestCaseOrderer(PriorityTestCaseOrderer.TypeName, PriorityTestCaseOrderer.AssemblyName)]
     [Trait("Category", "IntegrationTest")]
     public abstract class SearchProviderTests : SearchProviderTestsBase
     {
@@ -22,23 +23,45 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             // Create index and add documents
             var primaryDocuments = GetPrimaryDocuments();
 
-            var response = await provider.IndexAsync(DocumentType, primaryDocuments);
+            IndexingResult response;
+            var supportIndexSwap = provider as ISupportIndexSwap;
+
+            if (supportIndexSwap != null)
+            {
+                response = await supportIndexSwap.IndexWithBackupAsync(DocumentType, primaryDocuments);
+            }
+            else
+            {
+                response = await provider.IndexAsync(DocumentType, primaryDocuments);
+            }
 
             Assert.NotNull(response);
             Assert.NotNull(response.Items);
             Assert.Equal(primaryDocuments.Count, response.Items.Count);
             Assert.All(response.Items, i => Assert.True(i.Succeeded));
 
-
             // Update index with new fields and add more documents
             var secondaryDocuments = GetSecondaryDocuments();
-            response = await provider.IndexAsync(DocumentType, secondaryDocuments);
+
+            if (supportIndexSwap != null)
+            {
+                response = await supportIndexSwap.IndexWithBackupAsync(DocumentType, secondaryDocuments);
+            }
+            else
+            {
+                response = await provider.IndexAsync(DocumentType, secondaryDocuments);
+            }
 
             Assert.NotNull(response);
             Assert.NotNull(response.Items);
             Assert.Equal(secondaryDocuments.Count, response.Items.Count);
             Assert.All(response.Items, i => Assert.True(i.Succeeded));
 
+            // Switch from backup to active index
+            if (supportIndexSwap != null)
+            {
+                await supportIndexSwap.SwapIndexAsync(DocumentType);
+            }
 
             // Remove some documents
             response = await provider.RemoveAsync(DocumentType, new[] { new IndexDocument("Item-7"), new IndexDocument("Item-8") });
@@ -67,7 +90,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         }
 
         [Fact]
-        public virtual async Task CanRetriveStringCollection()
+        public virtual async Task CanRetrieveStringCollection()
         {
             var provider = GetSearchProvider();
 
@@ -99,15 +122,16 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
                     new SortingField { FieldName = "non-existent-field" },
                     new SortingField { FieldName = "Name" },
                 },
-                Take = 1,
+                Take = 2,
             };
 
             var response = await provider.SearchAsync(DocumentType, request);
 
-            Assert.Equal(1, response.DocumentsCount);
+            Assert.Equal(2, response.DocumentsCount);
 
-            var productName = response.Documents.First()["name"] as string;
-            Assert.Equal("Black Sox", productName);
+            // Sorting should be case insensitive
+            Assert.Equal("black Sox", response.Documents[0]["name"]);
+            Assert.Equal("Black Sox2", response.Documents[1]["name"]);
 
 
             request = new SearchRequest
@@ -119,9 +143,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             response = await provider.SearchAsync(DocumentType, request);
 
             Assert.Equal(1, response.DocumentsCount);
-
-            productName = response.Documents.First()["name"] as string;
-            Assert.Equal("Sample Product", productName);
+            Assert.Equal("Sample Product", response.Documents[0]["name"]);
         }
 
         [Fact]
@@ -387,7 +409,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
                 Filter = new TermFilter
                 {
                     FieldName = "HasMultiplePrices",
-                    Values = new[] { "tRue" } // Value should be case insensitive
+                    Values = new[] { "tRuE" } // Value should be case insensitive
                 },
                 Take = 10,
             };
@@ -402,7 +424,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
                 Filter = new TermFilter
                 {
                     FieldName = "HasMultiplePrices",
-                    Values = new[] { "fAlse" } // Value should be case insensitive
+                    Values = new[] { "fAlSe" } // Value should be case insensitive
                 },
                 Take = 10,
             };
@@ -507,7 +529,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
                 {
                     FieldName = "Location",
                     Location = GeoPoint.TryParse("0, 14"),
-                    Distance = 1110, // less than 10 degrees (1 degree at the equater is about 111 km)
+                    Distance = 1110, // less than 10 degrees (1 degree at the equator is about 111 km)
                 },
                 Take = 10,
             };
