@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
 using VirtoCommerce.ElasticSearchModule.Data.Extensions;
@@ -35,11 +36,14 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         private readonly Regex _specialSymbols = new("[/+_=]", RegexOptions.Compiled);
 
+        private readonly ILogger<ElasticSearchProvider> _logger;
+
         public ElasticSearchProvider(
             IOptions<SearchOptions> searchOptions,
             ISettingsManager settingsManager,
             IElasticClient client,
-            ElasticSearchRequestBuilder requestBuilder)
+            ElasticSearchRequestBuilder requestBuilder,
+            ILogger<ElasticSearchProvider> logger)
         {
             if (searchOptions == null)
             {
@@ -51,6 +55,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             RequestBuilder = requestBuilder;
             ServerUrl = Client.ConnectionSettings.ConnectionPool.Nodes.First().Uri;
             _searchOptions = searchOptions.Value;
+            _logger = logger;
         }
 
         protected IElasticClient Client { get; }
@@ -68,53 +73,61 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 throw new ArgumentNullException(nameof(documentType));
             }
 
-            try
+            // get active index and alias
+            var activeIndexAlias = GetIndexAlias(ActiveIndexAlias, documentType);
+
+            // if no active index found - check that default (active) index, if not create, if does assign the alias to it
+            var indexExists = await IndexExistsAsync(activeIndexAlias);
+            if (!indexExists)
             {
-                // get active index and alias
-                var activeIndexAlias = GetIndexAlias(ActiveIndexAlias, documentType);
-
-                // if no active index found - check that default (active) index, if not create, if does assign the alias to it
-                var indexExists = await IndexExistsAsync(activeIndexAlias);
-                if (!indexExists)
+                var indexName = GetIndexName(documentType);
+                var indexExits = await IndexExistsAsync(indexName);
+                if (!indexExits)
                 {
-                    var indexName = GetIndexName(documentType);
-                    var indexExits = await IndexExistsAsync(indexName);
-                    if (!indexExits)
-                    {
-                        // create new index with alias
-                        await CreateIndexAsync(indexName, activeIndexAlias);
-                    }
-                    else
-                    {
-                        // attach alias to default index
-                        await Client.Indices.PutAliasAsync(indexName, activeIndexAlias);
-                    }
-
+                    // create new index with alias
+                    await CreateIndexAsync(indexName, activeIndexAlias);
+                }
+                else
+                {
+                    // attach alias to default index
+                    await Client.Indices.PutAliasAsync(indexName, activeIndexAlias);
                 }
 
-                var activeIndexResponse = await Client.Indices.GetAliasAsync(activeIndexAlias);
-                var activeIndexName = activeIndexResponse.Indices.FirstOrDefault().Key;
-
-                // get backup index and alias
-                var backupIndexAlias = GetIndexAlias(BackupIndexAlias, documentType);
-                // swap
-                await Client.Indices.DeleteAliasAsync(activeIndexName, activeIndexAlias);
-
-                if (await IndexExistsAsync(backupIndexAlias))
-                {
-                    var backupIndexResponse = await Client.Indices.GetAliasAsync(backupIndexAlias);
-                    var backupIndexName = backupIndexResponse.Indices.FirstOrDefault().Key;
-
-                    await Client.Indices.DeleteAliasAsync(backupIndexName, backupIndexAlias);
-                    await Client.Indices.PutAliasAsync(backupIndexName, activeIndexAlias);
-                }
-
-                await Client.Indices.PutAliasAsync(activeIndexName, backupIndexAlias);
             }
-            catch (Exception ex)
+
+            // swap start
+            var activeIndexResponse = await Client.GetIndicesPointingToAliasAsync(activeIndexAlias);
+            var activeIndexName = activeIndexResponse?.FirstOrDefault();
+            if (string.IsNullOrEmpty(activeIndexName))
             {
-                ThrowException("Failed to swap indexes", ex);
+                return;
             }
+
+            var bulkAliasDescriptor = new BulkAliasDescriptor();
+
+            bulkAliasDescriptor.Remove(x => x.Index(activeIndexName).Alias(activeIndexAlias));
+
+            var backupIndexAlias = GetIndexAlias(BackupIndexAlias, documentType);
+            var backupIndexResponse = await Client.GetIndicesPointingToAliasAsync(backupIndexAlias);
+            var backupIndexName = backupIndexResponse?.FirstOrDefault();
+
+            if (!string.IsNullOrEmpty(backupIndexName))
+            {
+                bulkAliasDescriptor.Remove(x => x.Index(backupIndexName).Alias(backupIndexAlias));
+                bulkAliasDescriptor.Add(a => a.Index(backupIndexName).Alias(activeIndexAlias));
+            }
+
+            bulkAliasDescriptor.Add(a => a.Index(activeIndexName).Alias(backupIndexAlias));
+
+            var swapResponse = await Client.Indices.BulkAliasAsync(bulkAliasDescriptor);
+
+            if (!swapResponse.IsValid)
+            {
+                ThrowException($"Failed to swap indexes for the document type: {documentType}", swapResponse.OriginalException);
+            }
+
+            RemoveMappingFromCache(backupIndexAlias);
+            RemoveMappingFromCache(activeIndexAlias);
         }
 
         public async Task CreateIndexAsync(string documentType, IndexDocument schema)
@@ -234,19 +247,26 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         /// </summary>
         public void AddActiveAlias(IEnumerable<string> documentTypes)
         {
-            foreach (var documentType in documentTypes)
+            try
             {
-                var indexAlias = GetIndexAlias(ActiveIndexAlias, documentType);
-                if (IndexExists(indexAlias))
+                foreach (var documentType in documentTypes)
                 {
-                    continue;
-                }
+                    var indexAlias = GetIndexAlias(ActiveIndexAlias, documentType);
+                    if (IndexExists(indexAlias))
+                    {
+                        continue;
+                    }
 
-                var indexName = GetIndexName(documentType);
-                if (IndexExists(indexName))
-                {
-                    Client.Indices.PutAlias(indexName, indexAlias);
+                    var indexName = GetIndexName(documentType);
+                    if (IndexExists(indexName))
+                    {
+                        Client.Indices.PutAlias(indexName, indexAlias);
+                    }
                 }
+            }
+            catch (SearchException ex)
+            {
+                _logger.LogError(ex, $"Error while putting an active alias on a default index at {nameof(AddActiveAlias)}. Possible fail on Elastic server side at IndexExists check.");
             }
         }
 
@@ -378,12 +398,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     if (!properties.ContainsKey(fieldName))
                     {
                         // Create new property mapping
-#pragma warning disable CS0618 // Type or member is obsolete
-                        var providerField = field.ValueType == IndexDocumentFieldValueType.Undefined
-                            ? CreateProviderField(field)
-                            : CreateProviderFieldByType(field);
-#pragma warning restore CS0618 // Type or member is obsolete
-
+                        var providerField = CreateProviderFieldByType(field);
                         ConfigureProperty(providerField, field);
                         properties.Add(fieldName, providerField);
                     }
@@ -411,94 +426,77 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result;
         }
 
+        protected virtual IProperty CreateProviderFieldByType(IndexDocumentField field)
+        {
+            return field.ValueType switch
+            {
+#pragma warning disable CS0618 // Type or member is obsolete
+                IndexDocumentFieldValueType.Undefined => CreateProviderField(field),
+#pragma warning restore CS0618 // Type or member is obsolete
+                IndexDocumentFieldValueType.String when field.IsFilterable => new KeywordProperty(),
+                IndexDocumentFieldValueType.String when !field.IsFilterable => new TextProperty(),
+                IndexDocumentFieldValueType.Char => new KeywordProperty(),
+                IndexDocumentFieldValueType.Guid => new KeywordProperty(),
+                IndexDocumentFieldValueType.Complex => new NestedProperty(),
+                IndexDocumentFieldValueType.Integer => new NumberProperty(NumberType.Integer),
+                IndexDocumentFieldValueType.Short => new NumberProperty(NumberType.Short),
+                IndexDocumentFieldValueType.Byte => new NumberProperty(NumberType.Byte),
+                IndexDocumentFieldValueType.Long => new NumberProperty(NumberType.Long),
+                IndexDocumentFieldValueType.Float => new NumberProperty(NumberType.Float),
+                IndexDocumentFieldValueType.Decimal => new NumberProperty(NumberType.Double),
+                IndexDocumentFieldValueType.Double => new NumberProperty(NumberType.Double),
+                IndexDocumentFieldValueType.DateTime => new DateProperty(),
+                IndexDocumentFieldValueType.Boolean => new BooleanProperty(),
+                IndexDocumentFieldValueType.GeoPoint => new GeoPointProperty(),
+                _ => throw new ArgumentException($"Field '{field.Name}' has unsupported type '{field.ValueType}'", nameof(field))
+            };
+        }
+
         [Obsolete("Left for backward compatibility.")]
         protected virtual IProperty CreateProviderField(IndexDocumentField field)
         {
-            var fieldType = field.Value?.GetType() ?? typeof(object);
-
-            if (fieldType == typeof(string))
+            if (field.Value == null)
             {
-                return field.IsFilterable
-                    ? new KeywordProperty()
-                    : new TextProperty();
+                throw new ArgumentException($"Field '{field.Name}' has no value", nameof(field));
             }
 
-            if (typeof(IEntity).IsAssignableFrom(fieldType) || (fieldType.IsArray && typeof(IEntity).IsAssignableFrom(fieldType.GetElementType())))
+            var fieldType = field.Value.GetType();
+
+            if (IsComplexType(fieldType))
             {
                 return new NestedProperty();
             }
 
-            switch (fieldType.Name)
+            return fieldType.Name switch
             {
-                case "Int32":
-                case "UInt16":
-                    return new NumberProperty(NumberType.Integer);
-                case "Int16":
-                case "Byte":
-                    return new NumberProperty(NumberType.Short);
-                case "SByte":
-                    return new NumberProperty(NumberType.Byte);
-                case "Int64":
-                case "UInt32":
-                case "TimeSpan":
-                    return new NumberProperty(NumberType.Long);
-                case "Single":
-                    return new NumberProperty(NumberType.Float);
-                case "Decimal":
-                case "Double":
-                case "UInt64":
-                    return new NumberProperty(NumberType.Double);
-                case "DateTime":
-                case "DateTimeOffset":
-                    return new DateProperty();
-                case "Boolean":
-                    return new BooleanProperty();
-                case "Char":
-                case "Guid":
-                    return new KeywordProperty();
-                case "GeoPoint":
-                    return new GeoPointProperty();
-            }
-
-            throw new ArgumentException($"Field {field.Name} has unsupported type {fieldType}", nameof(field));
+                "String" => field.IsFilterable ? new KeywordProperty() : new TextProperty(),
+                "Int32" => new NumberProperty(NumberType.Integer),
+                "UInt16" => new NumberProperty(NumberType.Integer),
+                "Int16" => new NumberProperty(NumberType.Short),
+                "Byte" => new NumberProperty(NumberType.Short),
+                "SByte" => new NumberProperty(NumberType.Byte),
+                "Int64" => new NumberProperty(NumberType.Long),
+                "UInt32" => new NumberProperty(NumberType.Long),
+                "TimeSpan" => new NumberProperty(NumberType.Long),
+                "Single" => new NumberProperty(NumberType.Float),
+                "Decimal" => new NumberProperty(NumberType.Double),
+                "Double" => new NumberProperty(NumberType.Double),
+                "UInt64" => new NumberProperty(NumberType.Double),
+                "DateTime" => new DateProperty(),
+                "DateTimeOffset" => new DateProperty(),
+                "Boolean" => new BooleanProperty(),
+                "Char" => new KeywordProperty(),
+                "Guid" => new KeywordProperty(),
+                "GeoPoint" => new GeoPointProperty(),
+                _ => throw new ArgumentException($"Field '{field.Name}' has unsupported type '{fieldType}'", nameof(field))
+            };
         }
 
-        protected virtual IProperty CreateProviderFieldByType(IndexDocumentField field)
+        private static bool IsComplexType(Type type)
         {
-            switch (field.ValueType)
-            {
-                case IndexDocumentFieldValueType.String when field.IsFilterable:
-                    return new KeywordProperty();
-                case IndexDocumentFieldValueType.String when !field.IsFilterable:
-                    return new TextProperty();
-                case IndexDocumentFieldValueType.Char:
-                case IndexDocumentFieldValueType.Guid:
-                    return new KeywordProperty();
-                case IndexDocumentFieldValueType.Complex:
-                    return new NestedProperty();
-                case IndexDocumentFieldValueType.Integer:
-                    return new NumberProperty(NumberType.Integer);
-                case IndexDocumentFieldValueType.Short:
-                    return new NumberProperty(NumberType.Short);
-                case IndexDocumentFieldValueType.Byte:
-                    return new NumberProperty(NumberType.Byte);
-                case IndexDocumentFieldValueType.Long:
-                    return new NumberProperty(NumberType.Long);
-                case IndexDocumentFieldValueType.Float:
-                    return new NumberProperty(NumberType.Float);
-                case IndexDocumentFieldValueType.Decimal:
-                    return new NumberProperty(NumberType.Double);
-                case IndexDocumentFieldValueType.Double:
-                    return new NumberProperty(NumberType.Double);
-                case IndexDocumentFieldValueType.DateTime:
-                    return new DateProperty();
-                case IndexDocumentFieldValueType.Boolean:
-                    return new BooleanProperty();
-                case IndexDocumentFieldValueType.GeoPoint:
-                    return new GeoPointProperty();
-                default:
-                    throw new ArgumentException($"Field {field.Name} has unsupported type {field.ValueType}", nameof(field));
-            }
+            return
+                type.IsAssignableTo(typeof(IEntity)) ||
+                type.IsAssignableTo(typeof(IEnumerable<IEntity>));
         }
 
         protected virtual void ConfigureProperty(IProperty property, IndexDocumentField field)
@@ -524,10 +522,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             {
                 //VP-6107: need to index all objects with type 'Object' as 'Text'
                 //There are Properties.Values.Value in Category/Product
-                var objects = field.Value.GetPropertyNames<object>(deep: 7).Distinct().ToList();
-                nestedProperty.Properties = new Properties(objects
-                                .Select(v => new { Key = new PropertyName(v), Value = new TextProperty() })
-                                .ToDictionary(o => o.Key, o => (IProperty)o.Value));
+                var objects = field.Value.GetPropertyNames<object>(deep: 7);
+                nestedProperty.Properties = new Properties(objects.ToDictionary(x => new PropertyName(x), _ => (IProperty)new TextProperty()));
             }
         }
 
@@ -676,12 +672,22 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected virtual async Task<bool> IndexExistsAsync(string indexName)
         {
             var response = await Client.Indices.ExistsAsync(indexName);
+            if (response.ApiCall?.Success == false)
+            {
+                ThrowException($"Index check call failed for index: {indexName}", response.OriginalException);
+            }
+
             return response.Exists;
         }
 
         protected virtual bool IndexExists(string indexName)
         {
             var response = Client.Indices.Exists(indexName);
+            if (response.ApiCall?.Success == false)
+            {
+                ThrowException($"Index check call failed for index: {indexName}", response.OriginalException);
+            }
+
             return response.Exists;
         }
 

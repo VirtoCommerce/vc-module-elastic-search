@@ -20,20 +20,24 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 Query = GetQuery(request),
                 PostFilter = GetFilters(request, availableFields),
                 Aggregations = GetAggregations(request, availableFields),
-                Sort = GetSorting(request?.Sorting),
-                From = request?.Skip,
-                Size = request?.Take,
-                TrackScores = request?.Sorting?.Any(x => x.FieldName.EqualsInvariant(Score)) ?? false
             };
 
-            if (request?.IncludeFields != null && request.IncludeFields.Any())
+            if (request != null)
             {
-                result.Source = GetSourceFilters(request);
-            }
+                result.Sort = GetSorting(request.Sorting);
+                result.From = request.Skip;
+                result.Size = request.Take;
+                result.TrackScores = request.Sorting?.Any(x => x.FieldName.EqualsInvariant(Score)) ?? false;
 
-            if (request?.Take == 1)
-            {
-                result.TrackTotalHits = true;
+                if (request.IncludeFields?.Any() == true)
+                {
+                    result.Source = GetSourceFilters(request);
+                }
+
+                if (request.Take == 1)
+                {
+                    result.TrackTotalHits = true;
+                }
             }
 
             return result;
@@ -313,7 +317,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     var aggregationId = aggregation.Id ?? aggregation.FieldName;
                     var fieldName = ElasticSearchHelper.ToElasticFieldName(aggregation.FieldName);
 
-                    if (IsKeywordField(fieldName, availableFields))
+                    if (IsRawKeywordField(fieldName, availableFields))
                     {
                         fieldName += ".raw";
                     }
@@ -334,14 +338,13 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             return result.Any() ? new AggregationDictionary(result) : null;
         }
 
-        protected static bool IsKeywordField(string fieldName, IProperties availableFields)
+        protected static bool IsRawKeywordField(string fieldName, IProperties availableFields)
         {
-            var keywordFieldType = FieldType.Keyword.ToString();
-
             return availableFields
                 .Any(kvp =>
                     kvp.Key.Name.EqualsInvariant(fieldName) &&
-                    kvp.Value.Type.EqualsInvariant(keywordFieldType));
+                    kvp.Value is KeywordProperty keywordProperty &&
+                    keywordProperty.Fields?.ContainsKey("raw") == true);
         }
 
         protected virtual void AddTermAggregationRequest(IDictionary<string, AggregationContainer> container, string aggregationId, string field, QueryContainer filter, TermAggregationRequest termAggregationRequest)

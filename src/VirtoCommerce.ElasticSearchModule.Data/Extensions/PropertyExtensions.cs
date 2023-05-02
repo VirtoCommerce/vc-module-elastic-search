@@ -11,14 +11,14 @@ namespace VirtoCommerce.ElasticSearchModule.Data.Extensions
         public static ISet<string> GetPropertyNames<T>(this object obj, int deep)
         {
             var result = new HashSet<string>();
-            GetPropertyNamesInner<T>(obj, parentName: null, deep, result);
+            GetPropertyNamesInner<T>(obj, deep, parentName: null, result);
 
             return result;
         }
 
-        private static void GetPropertyNamesInner<T>(this object obj, string parentName, int deep, ISet<string> result)
+        private static void GetPropertyNamesInner<T>(this object obj, int deep, string parentName, ISet<string> result)
         {
-            if (obj == null || deep <= 0 || obj.GetType().IsPrimitive)
+            if (obj == null || deep <= 0)
             {
                 return;
             }
@@ -30,50 +30,48 @@ namespace VirtoCommerce.ElasticSearchModule.Data.Extensions
                 .Where(x =>
                     x.CanRead &&
                     x.CanWrite &&
-                    (x.PropertyType == typeof(T) || HasNestedProperties(x.PropertyType)))
-                .ToList();
+                    (x.PropertyType == typeof(T) || HasNestedProperties(x.PropertyType)));
 
-            foreach (var propertyInfo in properties)
+            foreach (var property in properties)
             {
-                var propertyName = propertyInfo.Name.ToCamelCase();
-
-                var fullName = parentName == null
-                    ? propertyName
-                    : $"{parentName}.{propertyName}";
-
-                if (propertyInfo.PropertyType == typeof(T))
+                if (property.PropertyType == typeof(T))
                 {
-                    result.Add(fullName);
+                    var propertyName = GetFullName(parentName, property.Name);
+                    result.Add(propertyName);
+                    continue;
                 }
-                else
+
+                var value = property.GetValue(obj, null);
+
+                if (value is IEnumerable enumerable)
                 {
-                    var propValue = propertyInfo.GetValue(obj, null);
-                    if (propValue != null)
+                    var newParentName = GetFullName(parentName, property.Name);
+                    foreach (var item in enumerable)
                     {
-                        if (propValue is IEnumerable enumerable)
-                        {
-                            foreach (var child in enumerable)
-                            {
-                                GetPropertyNamesInner<T>(child, fullName, deep - 1, result);
-                            }
-                        }
-                        else if (propertyInfo.PropertyType.Assembly == type.Assembly)
-                        {
-                            GetPropertyNamesInner<T>(propValue, fullName, deep - 1, result);
-                        }
+                        GetPropertyNamesInner<T>(item, deep - 1, newParentName, result);
                     }
+                }
+                else if (value != null && property.PropertyType.Assembly == type.Assembly)
+                {
+                    var newParentName = GetFullName(parentName, property.Name);
+                    GetPropertyNamesInner<T>(value, deep - 1, newParentName, result);
                 }
             }
         }
 
         private static bool HasNestedProperties(Type type)
         {
-            if (type == typeof(string) || type.IsAssignableTo(typeof(IEnumerable<string>)))
-            {
-                return false;
-            }
+            return
+                !type.IsPrimitive &&
+                type != typeof(string) &&
+                !type.IsAssignableTo(typeof(IEnumerable<string>));
+        }
 
-            return !type.IsPrimitive;
+        private static string GetFullName(string parentName, string name)
+        {
+            return string.IsNullOrEmpty(parentName)
+                ? name.ToCamelCase()
+                : $"{parentName}.{name.ToCamelCase()}";
         }
 
         private static string ToCamelCase(this string str) =>

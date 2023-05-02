@@ -194,15 +194,19 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             public TestObjectValue()
             {
                 Id = Guid.NewGuid().ToString();
+                var ids = new[] { Id };
+                StringArray = ids;
+                StringList = ids;
             }
 
             public Property AddProperty(object value, string valueType)
             {
                 var propValue = new PropertyValue { Value = value, ValueType = valueType };
-                var values = new List<PropertyValue> { propValue };
+                var values = new[] { propValue };
                 var property = new Property
                 {
-                    Values = values,
+                    Array = values,
+                    List = values,
                     ValueInProperty = propValue,
                     Value = value
                 };
@@ -214,13 +218,16 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
 
             public IList<Property> TestProperties { get; set; } = new List<Property>();
             public string Id { get; set; }
+            public string[] StringArray { get; set; }
+            public IList<string> StringList { get; set; }
             public PropertyValue Value { get; set; }
         }
 
         public class Property : IEntity
         {
             public string[] Ids { get; set; }
-            public IList<PropertyValue> Values { get; set; } = new List<PropertyValue>();
+            public PropertyValue[] Array { get; set; }
+            public IList<PropertyValue> List { get; set; } = new List<PropertyValue>();
             public PropertyValue ValueInProperty { get; set; }
             public string ValueType { get; set; }
             public bool IsActive { get; set; }
