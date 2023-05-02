@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using VirtoCommerce.Platform.Core.Settings;
 
-namespace VirtoCommerce.ElasticSearchModule.Web
+namespace VirtoCommerce.ElasticSearchModule.Data
 {
     [ExcludeFromCodeCoverage]
     public static class ModuleConstants
@@ -12,48 +12,48 @@ namespace VirtoCommerce.ElasticSearchModule.Web
             public static class Indexing
             {
 #pragma warning disable S109
-                private static readonly SettingDescriptor IndexTotalFieldsLimit = new()
+                public static SettingDescriptor IndexTotalFieldsLimit { get; } = new()
                 {
                     Name = "VirtoCommerce.Search.ElasticSearch.IndexTotalFieldsLimit",
                     GroupName = "Search|ElasticSearch",
                     ValueType = SettingValueType.Integer,
-                    DefaultValue = 1000
+                    DefaultValue = 1000,
                 };
 
-                private static readonly SettingDescriptor TokenFilter = new()
+                public static SettingDescriptor TokenFilter { get; } = new()
                 {
                     Name = "VirtoCommerce.Search.ElasticSearch.TokenFilter",
                     GroupName = "Search|ElasticSearch",
                     ValueType = SettingValueType.ShortText,
-                    DefaultValue = "custom_edge_ngram"
+                    DefaultValue = "custom_edge_ngram",
                 };
 
-                private static readonly SettingDescriptor MinGram = new()
+                public static SettingDescriptor MinGram { get; } = new()
                 {
                     Name = "VirtoCommerce.Search.ElasticSearch.NGramTokenFilter.MinGram",
                     GroupName = "Search|ElasticSearch",
                     ValueType = SettingValueType.Integer,
-                    DefaultValue = 1
+                    DefaultValue = 1,
                 };
 
-                private static readonly SettingDescriptor MaxGram = new()
+                public static SettingDescriptor MaxGram { get; } = new()
                 {
                     Name = "VirtoCommerce.Search.ElasticSearch.NGramTokenFilter.MaxGram",
                     GroupName = "Search|ElasticSearch",
                     ValueType = SettingValueType.Integer,
-                    DefaultValue = 20
+                    DefaultValue = 20,
                 };
 
-                private static readonly SettingDescriptor DeleteDuplicateIndexes = new()
+                public static SettingDescriptor DeleteDuplicateIndexes { get; } = new()
                 {
                     Name = "VirtoCommerce.Search.ElasticSearch.DeleteDuplicateIndexes",
                     GroupName = "Search|ElasticSearch",
                     ValueType = SettingValueType.Boolean,
-                    DefaultValue = true
+                    DefaultValue = true,
                 };
-
 #pragma warning restore S109
-                public static IEnumerable<SettingDescriptor> AllSettings
+
+                public static IEnumerable<SettingDescriptor> AllIndexingSettings
                 {
                     get
                     {
@@ -66,7 +66,7 @@ namespace VirtoCommerce.ElasticSearchModule.Web
                 }
             }
 
-            public static IEnumerable<SettingDescriptor> AllSettings => Indexing.AllSettings;
+            public static IEnumerable<SettingDescriptor> AllSettings => Indexing.AllIndexingSettings;
         }
     }
 }

@@ -9,11 +9,11 @@ using Xunit;
 
 namespace VirtoCommerce.ElasticSearchModule.Tests
 {
-    [Trait("Category", "CI")]
+    [Trait("Category", "Unit")]
     public class ElasticSearchRequestBuilderTests
     {
-        private readonly ElasticSearchRequestBuilderTestProxy _testClass = new ElasticSearchRequestBuilderTestProxy();
-        private readonly Fixture _fixture = new Fixture();
+        private readonly ElasticSearchRequestBuilderTestProxy _testClass = new();
+        private readonly Fixture _fixture = new();
 
         [Theory]
         [InlineData("0", "false")]
