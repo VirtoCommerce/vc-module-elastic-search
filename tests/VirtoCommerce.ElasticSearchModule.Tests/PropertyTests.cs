@@ -1,6 +1,7 @@
 using FluentAssertions;
 using VirtoCommerce.ElasticSearchModule.Data.Extensions;
 using Xunit;
+using static VirtoCommerce.ElasticSearchModule.Tests.SearchProviderTestsBase;
 
 namespace VirtoCommerce.ElasticSearchModule.Tests
 {
@@ -10,7 +11,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         [Fact]
         public void GetPropertyNames_GetAllNamesFromAnObjectInDeepSeven()
         {
-            var obj = new SearchProviderTestsBase.TestObjectValue();
+            var obj = new TestObjectValue();
             obj.AddProperty(true, "Boolean");
             obj.AddProperty(99.99m, "Number");
 
@@ -24,7 +25,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             );
 
 
-            obj.Value = new SearchProviderTestsBase.PropertyValue { Value = 99.99m, ValueType = "Number" };
+            obj.Value = new PropertyValue { Value = 99.99m, ValueType = "Number" };
 
             var names2 = obj.GetPropertyNames<object>(7);
 
