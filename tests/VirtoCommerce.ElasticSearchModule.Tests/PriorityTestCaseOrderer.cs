@@ -9,7 +9,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
     public class PriorityTestCaseOrderer : ITestCaseOrderer
     {
         public const string TypeName = "VirtoCommerce.SearchModule.Tests.PriorityTestCaseOrderer";
-        public const string AssembyName = "VirtoCommerce.SearchModule.Tests";
+        public const string AssemblyName = "VirtoCommerce.SearchModule.Tests";
 
         public IEnumerable<TTestCase> OrderTestCases<TTestCase>(IEnumerable<TTestCase> testCases)
             where TTestCase : ITestCase

@@ -1,7 +1,9 @@
+using System;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using VirtoCommerce.ElasticSearchModule.Data;
 using VirtoCommerce.SearchModule.Core.Model;
+using VirtoCommerce.SearchModule.Core.Services;
 using Xunit;
 
 namespace VirtoCommerce.ElasticSearchModule.Tests
@@ -17,11 +19,11 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             _configuration = configuration;
         }
 
-        protected override ElasticSearchProvider GetSearchProvider()
+        protected override ISearchProvider GetSearchProvider()
         {
             var searchOptions = Options.Create(new SearchOptions { Scope = "test-core", Provider = "ElasticSearch" });
-            var elasticOptions = Options.Create(_configuration.GetSection("Search:ElasticSearch").Get<ElasticSearchOptions>());
-            elasticOptions.Value.Server ??= "localhost:9200";
+            var elasticOptions = Options.Create(_configuration.GetSection("ElasticSearch").Get<ElasticSearchOptions>());
+            elasticOptions.Value.Server ??= Environment.GetEnvironmentVariable("TestElasticsearchHost") ?? "localhost:9200";
             var connectionSettings = new ElasticSearchConnectionSettings(elasticOptions);
             var client = new ElasticSearchClient(connectionSettings);
 

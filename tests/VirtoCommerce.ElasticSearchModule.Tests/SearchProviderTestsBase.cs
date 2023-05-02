@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Moq;
-using VirtoCommerce.ElasticSearchModule.Data;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Settings;
 using VirtoCommerce.SearchModule.Core.Extensions;
 using VirtoCommerce.SearchModule.Core.Model;
+using VirtoCommerce.SearchModule.Core.Services;
 
 namespace VirtoCommerce.ElasticSearchModule.Tests
 {
     public abstract class SearchProviderTestsBase
     {
-        protected abstract ElasticSearchProvider GetSearchProvider();
+        protected abstract ISearchProvider GetSearchProvider();
 
         protected virtual IList<IndexDocument> GetPrimaryDocuments()
         {
@@ -186,8 +186,18 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         public class TestObjectValue : IEntity
         {
             public TestObjectValue(object value, string valueType)
+                : this()
+            {
+                AddProperty(value, valueType);
+            }
+
+            public TestObjectValue()
             {
                 Id = Guid.NewGuid().ToString();
+            }
+
+            public Property AddProperty(object value, string valueType)
+            {
                 var propValue = new PropertyValue { Value = value, ValueType = valueType };
                 var values = new List<PropertyValue> { propValue };
                 var property = new Property
@@ -198,10 +208,13 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
                 };
 
                 TestProperties.Add(property);
+
+                return property;
             }
 
             public IList<Property> TestProperties { get; set; } = new List<Property>();
             public string Id { get; set; }
+            public PropertyValue Value { get; set; }
         }
 
         public class Property : IEntity

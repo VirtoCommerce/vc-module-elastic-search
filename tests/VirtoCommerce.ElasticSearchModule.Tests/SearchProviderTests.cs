@@ -1,12 +1,13 @@
 using System.Linq;
 using System.Threading.Tasks;
 using VirtoCommerce.SearchModule.Core.Model;
+using VirtoCommerce.SearchModule.Core.Services;
 using Xunit;
 using static VirtoCommerce.SearchModule.Core.Extensions.IndexDocumentExtensions;
 
 namespace VirtoCommerce.ElasticSearchModule.Tests
 {
-    [TestCaseOrderer(PriorityTestCaseOrderer.TypeName, PriorityTestCaseOrderer.AssembyName)]
+    [TestCaseOrderer(PriorityTestCaseOrderer.TypeName, PriorityTestCaseOrderer.AssemblyName)]
     [Trait("Category", "IntegrationTest")]
     public abstract class SearchProviderTests : SearchProviderTestsBase
     {
@@ -17,26 +18,46 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         {
             var provider = GetSearchProvider();
 
-            // Delete backup index
+            // Delete index
             await provider.DeleteIndexAsync(DocumentType);
 
-            // Create backup index
-            await provider.CreateIndexAsync(DocumentType, new IndexDocument("schema"));
+            // Create index
+            if (provider is ISupportIndexCreate supportIndexCreate)
+            {
+                await supportIndexCreate.CreateIndexAsync(DocumentType, new IndexDocument("schema"));
+            }
 
             // Add documents to the backup index
             var primaryDocuments = GetPrimaryDocuments();
 
-            var response = await provider.IndexWithBackupAsync(DocumentType, primaryDocuments);
+            IndexingResult response;
+            var supportIndexSwap = provider as ISupportIndexSwap;
+
+            if (supportIndexSwap != null)
+            {
+                response = await supportIndexSwap.IndexWithBackupAsync(DocumentType, primaryDocuments);
+            }
+            else
+            {
+                response = await provider.IndexAsync(DocumentType, primaryDocuments);
+            }
 
             Assert.NotNull(response);
             Assert.NotNull(response.Items);
             Assert.Equal(primaryDocuments.Count, response.Items.Count);
             Assert.All(response.Items, i => Assert.True(i.Succeeded));
 
-
-            // Update backup index with new fields and add more documents
+            // Update index with new fields and add more documents
             var secondaryDocuments = GetSecondaryDocuments();
-            response = await provider.IndexWithBackupAsync(DocumentType, secondaryDocuments);
+
+            if (supportIndexSwap != null)
+            {
+                response = await supportIndexSwap.IndexWithBackupAsync(DocumentType, secondaryDocuments);
+            }
+            else
+            {
+                response = await provider.IndexAsync(DocumentType, secondaryDocuments);
+            }
 
             Assert.NotNull(response);
             Assert.NotNull(response.Items);
@@ -44,10 +65,12 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             Assert.All(response.Items, i => Assert.True(i.Succeeded));
 
             // Switch from backup to active index
-            await provider.SwapIndexAsync(DocumentType);
+            if (supportIndexSwap != null)
+            {
+                await supportIndexSwap.SwapIndexAsync(DocumentType);
+            }
 
-
-            // Remove some documents from the active index
+            // Remove some documents
             response = await provider.RemoveAsync(DocumentType, new[] { new IndexDocument("Item-7"), new IndexDocument("Item-8") });
 
             Assert.NotNull(response);
@@ -393,7 +416,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
                 Filter = new TermFilter
                 {
                     FieldName = "HasMultiplePrices",
-                    Values = new[] { "tRue" } // Value should be case insensitive
+                    Values = new[] { "tRuE" } // Value should be case insensitive
                 },
                 Take = 10,
             };
@@ -408,7 +431,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
                 Filter = new TermFilter
                 {
                     FieldName = "HasMultiplePrices",
-                    Values = new[] { "fAlse" } // Value should be case insensitive
+                    Values = new[] { "fAlSe" } // Value should be case insensitive
                 },
                 Take = 10,
             };
