@@ -19,7 +19,7 @@ using SearchRequest = VirtoCommerce.SearchModule.Core.Model.SearchRequest;
 
 namespace VirtoCommerce.ElasticSearchModule.Data
 {
-    public class ElasticSearchProvider : ISearchProvider, ISupportIndexSwap, ISupportPartialUpdate
+    public class ElasticSearchProvider : ISearchProvider, ISupportIndexSwap, ISupportPartialUpdate, ISupportSuggestions
     {
         // prefixes for index aliases
         public const string ActiveIndexAlias = "active";
@@ -30,6 +30,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         public const string EdgeNGramFilterName = "custom_edge_ngram";
 
         private const string _exceptionTitle = "Elasticsearch Server";
+
+        private const string _defaultSuggestionField = "name";
 
         private readonly ConcurrentDictionary<string, IProperties> _mappings = new();
         private readonly SearchOptions _searchOptions;
@@ -263,6 +265,84 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             {
                 _logger.LogError(ex, $"Error while putting an active alias on a default index at {nameof(AddActiveAlias)}. Possible fail on Elastic server side at IndexExists check.");
             }
+        }
+
+        public virtual async Task<SuggestionResponse> GetSuggestionsAsync(string documentType, SuggestionRequest request)
+        {
+            var alias = request.UseBackupIndex
+                ? BackupIndexAlias
+                : ActiveIndexAlias;
+            var indexName = GetIndexAlias(alias, documentType);
+
+            ISearchResponse<SearchDocument> providerResponse;
+
+            var buckets = new Dictionary<string, ISuggestBucket>();
+
+            if (request.Fields.IsNullOrEmpty())
+            {
+                var nameSuggester = new SuggestBucket
+                {
+                    Text = request.Query,
+                    Completion = new CompletionSuggester
+                    {
+                        Field = $"{_defaultSuggestionField}.completion",
+                        Size = request.Size
+                    }
+                };
+                buckets.Add(_defaultSuggestionField, nameSuggester);
+            }
+            else
+            {
+                buckets = request.Fields.ToDictionary(x => x, x => (ISuggestBucket)new SuggestBucket
+                {
+                    Text = request.Query,
+                    Completion = new CompletionSuggester
+                    {
+                        Field = $"{x}.completion",
+                        Size = request.Size
+                    }
+                });
+            }
+
+            try
+            {
+                var suggestRequest = new Nest.SearchRequest(indexName)
+                {
+                    Suggest = new SuggestContainer(buckets)
+                };
+
+                providerResponse = await Client.SearchAsync<SearchDocument>(suggestRequest);
+            }
+            catch (Exception ex)
+            {
+                throw new SearchException(ex.Message, ex);
+            }
+
+            if (!providerResponse.IsValid)
+            {
+                ThrowException(providerResponse.DebugInformation, null);
+            }
+
+            var result = new SuggestionResponse();
+
+            if (request.Fields.IsNullOrEmpty() && providerResponse.Suggest.ContainsKey(_defaultSuggestionField))
+            {
+                result.Suggestions = providerResponse.Suggest[_defaultSuggestionField].SelectMany(s => s.Options).Select(o => o.Text).ToList();
+            }
+            else
+            {
+                foreach (var field in request.Fields)
+                {
+                    if (providerResponse.Suggest.ContainsKey(field))
+                    {
+                        var options = providerResponse.Suggest[field].SelectMany(s => s.Options).Select(o => o.Text);
+                        result.Suggestions.AddRange(options);
+                    }
+                }
+                result.Suggestions = result.Suggestions.Take(request.Size).ToList();
+            }
+
+            return result;
         }
 
         protected virtual async Task<IndexingResult> InternalIndexAsync(string documentType, IList<IndexDocument> documents, IndexingParameters parameters)
@@ -532,6 +612,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 keywordProperty.Fields = new Properties
                 {
                     { "raw", new KeywordProperty() },
+                    { "completion", new CompletionProperty() { Name = field.Name } }
                 };
             }
         }
