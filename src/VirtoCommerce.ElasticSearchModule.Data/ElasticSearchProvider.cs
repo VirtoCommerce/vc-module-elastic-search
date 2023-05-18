@@ -331,14 +331,12 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             }
             else
             {
-                foreach (var field in request.Fields)
+                foreach (var field in request.Fields.Where(field => providerResponse.Suggest.ContainsKey(field)))
                 {
-                    if (providerResponse.Suggest.ContainsKey(field))
-                    {
-                        var options = providerResponse.Suggest[field].SelectMany(s => s.Options).Select(o => o.Text);
-                        result.Suggestions.AddRange(options);
-                    }
+                    var options = providerResponse.Suggest[field].SelectMany(s => s.Options).Select(o => o.Text);
+                    result.Suggestions.AddRange(options);
                 }
+
                 result.Suggestions = result.Suggestions.Take(request.Size).ToList();
             }
 
