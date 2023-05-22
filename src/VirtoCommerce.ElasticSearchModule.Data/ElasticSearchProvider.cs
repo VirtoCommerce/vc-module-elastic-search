@@ -43,6 +43,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         /// </summary>
         private const string _completionFieldName = "name";
         private const string _completionSubFieldName = "completion";
+
+        private const string _completionContextdName = "catalog";
         private const string _completionContextFieldName = "catalog";
 
         public ElasticSearchProvider(
@@ -591,6 +593,15 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                             Name = field.Name,
                             MaxInputLength = 256,
                             PreservePositionIncrements = false,
+                            // add context (filter for completions)
+                            Contexts = new List<ISuggestContext>()
+                            {
+                                new CategorySuggestContext
+                                {
+                                    Name = _completionContextdName,
+                                    Path = _completionContextFieldName,
+                                }
+                            }
                         });
                     }
                 }
