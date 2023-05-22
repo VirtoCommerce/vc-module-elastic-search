@@ -31,14 +31,19 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         private const string _exceptionTitle = "Elasticsearch Server";
 
-        private const string _defaultSuggestionField = "name";
-
         private readonly ConcurrentDictionary<string, IProperties> _mappings = new();
         private readonly SearchOptions _searchOptions;
 
         private readonly Regex _specialSymbols = new("[/+_=]", RegexOptions.Compiled);
 
         private readonly ILogger<ElasticSearchProvider> _logger;
+
+        /// <summary>
+        /// If a filed with this name is encountered during indexing a Completion suggester will be automatically added to it
+        /// </summary>
+        private const string _completionFieldName = "name";
+        private const string _completionSubFieldName = "completion";
+        private const string _completionContextFieldName = "catalog";
 
         public ElasticSearchProvider(
             IOptions<SearchOptions> searchOptions,
@@ -278,36 +283,30 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             var buckets = new Dictionary<string, ISuggestBucket>();
 
+            var result = new SuggestionResponse();
+
             if (request.Fields.IsNullOrEmpty())
             {
-                var nameSuggester = new SuggestBucket
-                {
-                    Text = request.Query,
-                    Completion = new CompletionSuggester
-                    {
-                        Field = $"{_defaultSuggestionField}.completion",
-                        Size = request.Size
-                    }
-                };
-                buckets.Add(_defaultSuggestionField, nameSuggester);
+                return result;
             }
-            else
+
+            buckets = request.Fields.ToDictionary(x => x, x => (ISuggestBucket)new SuggestBucket
             {
-                buckets = request.Fields.ToDictionary(x => x, x => (ISuggestBucket)new SuggestBucket
+                Text = request.Query,
+                Completion = new CompletionSuggester
                 {
-                    Text = request.Query,
-                    Completion = new CompletionSuggester
-                    {
-                        Field = $"{x}.completion",
-                        Size = request.Size
-                    }
-                });
-            }
+                    // search completion by the special Completion type field, i.e. "name.completion"
+                    Field = $"{x}.{_completionSubFieldName}",
+                    Size = request.Size,
+                    SkipDuplicates = true,
+                }
+            });
 
             try
             {
                 var suggestRequest = new Nest.SearchRequest(indexName)
                 {
+                    Source = false,
                     Suggest = new SuggestContainer(buckets)
                 };
 
@@ -323,20 +322,14 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 ThrowException(providerResponse.DebugInformation, null);
             }
 
-            var result = new SuggestionResponse();
-
-            if (request.Fields.IsNullOrEmpty() && providerResponse.Suggest.ContainsKey(_defaultSuggestionField))
+            foreach (var field in request.Fields.Where(field => providerResponse.Suggest.ContainsKey(field)))
             {
-                result.Suggestions = providerResponse.Suggest[_defaultSuggestionField].SelectMany(s => s.Options).Select(o => o.Text).ToList();
+                var options = providerResponse.Suggest[field].SelectMany(s => s.Options).Select(o => o.Text);
+                result.Suggestions.AddRange(options);
             }
-            else
-            {
-                foreach (var field in request.Fields.Where(field => providerResponse.Suggest.ContainsKey(field)))
-                {
-                    var options = providerResponse.Suggest[field].SelectMany(s => s.Options).Select(o => o.Text);
-                    result.Suggestions.AddRange(options);
-                }
 
+            if (result.Suggestions.Count > request.Size)
+            {
                 result.Suggestions = result.Suggestions.Take(request.Size).ToList();
             }
 
@@ -576,11 +569,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         {
             if (property != null && property is not INestedProperty)
             {
-                if (property is CorePropertyBase baseProperty)
-                {
-                    baseProperty.Store = field.IsRetrievable;
-                }
-
                 switch (property)
                 {
                     case TextProperty textProperty:
@@ -589,6 +577,22 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     case KeywordProperty keywordProperty:
                         ConfigureKeywordProperty(keywordProperty, field);
                         break;
+                }
+
+                if (property is CorePropertyBase baseProperty)
+                {
+                    baseProperty.Store = field.IsRetrievable;
+
+                    // Add completion field
+                    if (field.Name.EqualsInvariant(_completionFieldName))
+                    {
+                        baseProperty.Fields.Add(new PropertyName(_completionSubFieldName), new CompletionProperty()
+                        {
+                            Name = field.Name,
+                            MaxInputLength = 256,
+                            PreservePositionIncrements = false,
+                        });
+                    }
                 }
             }
             else if (property is INestedProperty nestedProperty)
@@ -610,7 +614,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 keywordProperty.Fields = new Properties
                 {
                     { "raw", new KeywordProperty() },
-                    { "completion", new CompletionProperty() { Name = field.Name } }
                 };
             }
         }
