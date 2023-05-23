@@ -39,13 +39,9 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         private readonly ILogger<ElasticSearchProvider> _logger;
 
         /// <summary>
-        /// If a filed with this name is encountered during indexing a Completion suggester will be automatically added to it
+        /// Added to a suggestable field to enable completion suggestion queries (IsSuggestable == true)
         /// </summary>
-        private const string _completionFieldName = "name";
         private const string _completionSubFieldName = "completion";
-
-        private const string _completionContextdName = "catalog";
-        private const string _completionContextFieldName = "catalog";
 
         public ElasticSearchProvider(
             IOptions<SearchOptions> searchOptions,
@@ -586,22 +582,12 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     baseProperty.Store = field.IsRetrievable;
 
                     // Add completion field
-                    if (field.Name.EqualsInvariant(_completionFieldName))
+                    if (field.IsSuggestable)
                     {
                         baseProperty.Fields.Add(new PropertyName(_completionSubFieldName), new CompletionProperty()
                         {
                             Name = field.Name,
                             MaxInputLength = 256,
-                            PreservePositionIncrements = false,
-                            // add context (filter for completions)
-                            Contexts = new List<ISuggestContext>()
-                            {
-                                new CategorySuggestContext
-                                {
-                                    Name = _completionContextdName,
-                                    Path = _completionContextFieldName,
-                                }
-                            }
                         });
                     }
                 }
