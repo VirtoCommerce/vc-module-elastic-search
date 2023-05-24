@@ -41,8 +41,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         /// <summary>
         /// Added to a suggestable field to enable completion suggestion queries (IsSuggestable == true)
         /// </summary>
-        private const string _completionSubFieldName = "completion";
-        private const int _suggestionFieldLength = 256;
+        protected const string _completionSubFieldName = "completion";
+        protected const int _suggestionFieldLength = 256;
 
         public ElasticSearchProvider(
             IOptions<SearchOptions> searchOptions,
@@ -582,9 +582,10 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 {
                     baseProperty.Store = field.IsRetrievable;
 
-                    // Add completion field
-                    if (field.IsSuggestable)
+                    // Add completion field to text or keyword properties
+                    if (field.IsSuggestable && (property is TextProperty || property is KeywordProperty))
                     {
+                        baseProperty.Fields ??= new Properties();
                         baseProperty.Fields.Add(new PropertyName(_completionSubFieldName), new CompletionProperty()
                         {
                             Name = field.Name,
