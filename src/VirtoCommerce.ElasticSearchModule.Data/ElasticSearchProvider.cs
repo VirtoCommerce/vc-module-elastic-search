@@ -19,7 +19,7 @@ using SearchRequest = VirtoCommerce.SearchModule.Core.Model.SearchRequest;
 
 namespace VirtoCommerce.ElasticSearchModule.Data
 {
-    public class ElasticSearchProvider : ISearchProvider, ISupportIndexSwap, ISupportPartialUpdate
+    public class ElasticSearchProvider : ISearchProvider, ISupportIndexSwap, ISupportPartialUpdate, ISupportSuggestions
     {
         // prefixes for index aliases
         public const string ActiveIndexAlias = "active";
@@ -37,6 +37,12 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         private readonly Regex _specialSymbols = new("[/+_=]", RegexOptions.Compiled);
 
         private readonly ILogger<ElasticSearchProvider> _logger;
+
+        /// <summary>
+        /// Added to a suggestable field to enable completion suggestion queries (IsSuggestable == true)
+        /// </summary>
+        protected const string CompletionSubFieldName = "completion";
+        protected const int SuggestionFieldLength = 256;
 
         public ElasticSearchProvider(
             IOptions<SearchOptions> searchOptions,
@@ -263,6 +269,70 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             {
                 _logger.LogError(ex, $"Error while putting an active alias on a default index at {nameof(AddActiveAlias)}. Possible fail on Elastic server side at IndexExists check.");
             }
+        }
+
+        public virtual async Task<SuggestionResponse> GetSuggestionsAsync(string documentType, SuggestionRequest request)
+        {
+            var alias = request.UseBackupIndex
+                ? BackupIndexAlias
+                : ActiveIndexAlias;
+            var indexName = GetIndexAlias(alias, documentType);
+
+            ISearchResponse<SearchDocument> providerResponse;
+
+            var buckets = new Dictionary<string, ISuggestBucket>();
+
+            var result = new SuggestionResponse();
+
+            if (request.Fields.IsNullOrEmpty())
+            {
+                return result;
+            }
+
+            buckets = request.Fields.ToDictionary(x => x, x => (ISuggestBucket)new SuggestBucket
+            {
+                Text = request.Query,
+                Completion = new CompletionSuggester
+                {
+                    // search completion by the special Completion type field, i.e. "name.completion"
+                    Field = $"{x}.{CompletionSubFieldName}",
+                    Size = request.Size,
+                    SkipDuplicates = true,
+                }
+            });
+
+            try
+            {
+                var suggestRequest = new Nest.SearchRequest(indexName)
+                {
+                    Source = false,
+                    Suggest = new SuggestContainer(buckets)
+                };
+
+                providerResponse = await Client.SearchAsync<SearchDocument>(suggestRequest);
+            }
+            catch (Exception ex)
+            {
+                throw new SearchException(ex.Message, ex);
+            }
+
+            if (!providerResponse.IsValid)
+            {
+                ThrowException(providerResponse.DebugInformation, null);
+            }
+
+            foreach (var field in request.Fields.Where(field => providerResponse.Suggest.ContainsKey(field)))
+            {
+                var options = providerResponse.Suggest[field].SelectMany(s => s.Options).Select(o => o.Text);
+                result.Suggestions.AddRange(options);
+            }
+
+            if (result.Suggestions.Count > request.Size)
+            {
+                result.Suggestions = result.Suggestions.Take(request.Size).ToList();
+            }
+
+            return result;
         }
 
         protected virtual async Task<IndexingResult> InternalIndexAsync(string documentType, IList<IndexDocument> documents, IndexingParameters parameters)
@@ -498,11 +568,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         {
             if (property != null && property is not INestedProperty)
             {
-                if (property is CorePropertyBase baseProperty)
-                {
-                    baseProperty.Store = field.IsRetrievable;
-                }
-
                 switch (property)
                 {
                     case TextProperty textProperty:
@@ -511,6 +576,22 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     case KeywordProperty keywordProperty:
                         ConfigureKeywordProperty(keywordProperty, field);
                         break;
+                }
+
+                if (property is CorePropertyBase baseProperty)
+                {
+                    baseProperty.Store = field.IsRetrievable;
+
+                    // Add completion field to text or keyword properties
+                    if (field.IsSuggestable && (property is TextProperty || property is KeywordProperty))
+                    {
+                        baseProperty.Fields ??= new Properties();
+                        baseProperty.Fields.Add(new PropertyName(CompletionSubFieldName), new CompletionProperty()
+                        {
+                            Name = field.Name,
+                            MaxInputLength = SuggestionFieldLength,
+                        });
+                    }
                 }
             }
             else if (property is INestedProperty nestedProperty)
