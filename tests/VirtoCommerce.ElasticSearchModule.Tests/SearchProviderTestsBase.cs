@@ -15,6 +15,27 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
     {
         protected abstract ISearchProvider GetSearchProvider();
 
+        protected virtual IndexDocument BuildSchema()
+        {
+            var schema = new IndexDocument(Guid.NewGuid().ToString("N"));
+
+            schema.AddFilterableStringAndContentString("Name");
+            schema.AddFilterableStringAndContentString("Color");
+            schema.AddFilterableString("Code");
+            schema.AddFilterableInteger("Size");
+            schema.AddFilterableDateTime("Date");
+            schema.AddFilterableCollection("Catalog");
+            schema.AddFilterableCollection("Is");
+            schema.AddFilterableBoolean("HasMultiplePrices");
+
+            schema.Add(new IndexDocumentField("Location", new GeoPoint(0, 0), IndexDocumentFieldValueType.GeoPoint) { IsRetrievable = true, IsFilterable = true });
+            schema.Add(new IndexDocumentField("NumericCollection", 0, IndexDocumentFieldValueType.Integer) { IsRetrievable = true, IsFilterable = true, IsCollection = true });
+            schema.Add(new IndexDocumentField("StoredField", "This value should not be processed in any way, it is just stored in the index.", IndexDocumentFieldValueType.String) { IsRetrievable = true });
+            schema.Add(new IndexDocumentField("__obj", new TestObjectValue(true, "Boolean"), IndexDocumentFieldValueType.Complex) { IsRetrievable = true, IsFilterable = true });
+
+            return schema;
+        }
+
         protected virtual IList<IndexDocument> GetPrimaryDocuments()
         {
             return new List<IndexDocument>

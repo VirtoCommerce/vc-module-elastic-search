@@ -21,7 +21,13 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             // Delete index
             await provider.DeleteIndexAsync(DocumentType);
 
-            // Create index and add documents
+            // Create index
+            if (provider is ISupportIndexCreate supportIndexCreate)
+            {
+                await supportIndexCreate.CreateIndexAsync(DocumentType, BuildSchema());
+            }
+
+            // Add documents to the backup index
             var primaryDocuments = GetPrimaryDocuments();
 
             IndexingResult response;

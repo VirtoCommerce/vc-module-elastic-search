@@ -19,7 +19,7 @@ using SearchRequest = VirtoCommerce.SearchModule.Core.Model.SearchRequest;
 
 namespace VirtoCommerce.ElasticSearchModule.Data
 {
-    public class ElasticSearchProvider : ISearchProvider, ISupportIndexSwap, ISupportPartialUpdate, ISupportSuggestions
+    public class ElasticSearchProvider : ISearchProvider, ISupportIndexSwap, ISupportPartialUpdate, ISupportSuggestions, ISupportIndexCreate
     {
         // prefixes for index aliases
         public const string ActiveIndexAlias = "active";
@@ -134,6 +134,11 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             RemoveMappingFromCache(backupIndexAlias);
             RemoveMappingFromCache(activeIndexAlias);
+        }
+
+        public async Task CreateIndexAsync(string documentType, IndexDocument schema)
+        {
+            await InternalCreateIndexAsync(documentType, new[] { schema }, new IndexingParameters { Reindex = true });
         }
 
         public virtual async Task<IndexingResult> IndexWithBackupAsync(string documentType, IList<IndexDocument> documents)
