@@ -280,8 +280,6 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
             ISearchResponse<SearchDocument> providerResponse;
 
-            var buckets = new Dictionary<string, ISuggestBucket>();
-
             var result = new SuggestionResponse();
 
             if (request.Fields.IsNullOrEmpty())
@@ -289,7 +287,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 return result;
             }
 
-            buckets = request.Fields.ToDictionary(x => x, x => (ISuggestBucket)new SuggestBucket
+            var buckets = request.Fields.ToDictionary(x => x, x => (ISuggestBucket)new SuggestBucket
             {
                 Text = request.Query,
                 Completion = new CompletionSuggester
@@ -346,7 +344,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             var bulkResponse = await Client.BulkAsync(bulkDescriptor);
             await Client.Indices.RefreshAsync(indexName);
 
-            var result = new IndexingResult { Items = new List<IndexingResultItem>() };
+            var result = new IndexingResult();
 
             if (!bulkResponse.IsValid)
             {
@@ -403,7 +401,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         protected virtual async Task DeleteDuplicateIndexes(string documentType)
         {
-            if (!await SettingsManager.GetValueByDescriptorAsync<bool>(IndexingSettings.DeleteDuplicateIndexes))
+            if (!await SettingsManager.GetValueAsync<bool>(IndexingSettings.DeleteDuplicateIndexes))
             {
                 return;
             }
@@ -583,10 +581,10 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     baseProperty.Store = field.IsRetrievable;
 
                     // Add completion field to text or keyword properties
-                    if (field.IsSuggestable && (property is TextProperty || property is KeywordProperty))
+                    if (field.IsSuggestable && property is TextProperty or KeywordProperty)
                     {
                         baseProperty.Fields ??= new Properties();
-                        baseProperty.Fields.Add(new PropertyName(CompletionSubFieldName), new CompletionProperty()
+                        baseProperty.Fields.Add(new PropertyName(CompletionSubFieldName), new CompletionProperty
                         {
                             Name = field.Name,
                             MaxInputLength = SuggestionFieldLength,
@@ -838,22 +836,22 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         protected virtual int GetFieldsLimit()
         {
-            return SettingsManager.GetValueByDescriptor<int>(IndexingSettings.IndexTotalFieldsLimit);
+            return SettingsManager.GetValue<int>(IndexingSettings.IndexTotalFieldsLimit);
         }
 
         protected virtual string GetTokenFilterName()
         {
-            return SettingsManager.GetValueByDescriptor<string>(IndexingSettings.TokenFilter);
+            return SettingsManager.GetValue<string>(IndexingSettings.TokenFilter);
         }
 
         protected virtual int GetMinGram()
         {
-            return SettingsManager.GetValueByDescriptor<int>(IndexingSettings.MinGram);
+            return SettingsManager.GetValue<int>(IndexingSettings.MinGram);
         }
 
         protected virtual int GetMaxGram()
         {
-            return SettingsManager.GetValueByDescriptor<int>(IndexingSettings.MaxGram);
+            return SettingsManager.GetValue<int>(IndexingSettings.MaxGram);
         }
 
         /// <summary>

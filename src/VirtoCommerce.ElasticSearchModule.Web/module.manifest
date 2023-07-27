@@ -3,10 +3,12 @@
   <id>VirtoCommerce.ElasticSearch</id>
   <version>3.400.0</version>
   <version-tag />
-  <platformVersion>3.210.0</platformVersion>
+
+  <platformVersion>3.400.0</platformVersion>
   <dependencies>
-    <dependency id="VirtoCommerce.Search" version="3.223.0" />
+    <dependency id="VirtoCommerce.Search" version="3.401.0" />
   </dependencies>
+
   <title>Elastic Search</title>
   <description>Indexed search functionality with Elastic engine</description>
   <authors>

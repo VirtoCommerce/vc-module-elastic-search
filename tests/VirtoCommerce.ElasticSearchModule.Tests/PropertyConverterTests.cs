@@ -34,7 +34,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         public void CanConvertEntityToNestedProperty(string name, object value)
         {
             var provider = GetTestElasticsearchProvider();
-            var result = provider.CreateProviderFieldByType(new IndexDocumentField(name, value));
+            var result = provider.CreateProviderFieldByType(new IndexDocumentField(name, value, IndexDocumentFieldValueType.Complex));
             Assert.IsType<NestedProperty>(result);
         }
 

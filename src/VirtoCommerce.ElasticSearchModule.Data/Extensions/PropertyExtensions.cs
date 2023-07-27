@@ -11,7 +11,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data.Extensions
         public static ISet<string> GetPropertyNames<T>(this object obj, int deep)
         {
             var result = new HashSet<string>();
-            GetPropertyNamesInner<T>(obj, deep, parentName: null, result: result);
+            GetPropertyNamesInner<T>(obj, deep, parentName: null, result);
 
             return result;
         }

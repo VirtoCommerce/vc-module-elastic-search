@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Moq;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Settings;
+using VirtoCommerce.SearchModule.Core.Extensions;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
 
@@ -42,50 +43,47 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         {
             var doc = new IndexDocument(id);
 
-            doc.Add(new IndexDocumentField("Content", name) { IsRetrievable = true, IsSearchable = true, IsCollection = true });
-            doc.Add(new IndexDocumentField("Content", color) { IsRetrievable = true, IsSearchable = true, IsCollection = true });
+            doc.AddFilterableStringAndContentString("Name", name);
+            doc.AddFilterableStringAndContentString("Color", color);
 
-            doc.Add(new IndexDocumentField("Code", id) { IsRetrievable = true, IsFilterable = true });
-            doc.Add(new IndexDocumentField("Name", name) { IsRetrievable = true, IsFilterable = true });
-            doc.Add(new IndexDocumentField("Color", color) { IsRetrievable = true, IsFilterable = true });
-            doc.Add(new IndexDocumentField("Size", size) { IsRetrievable = true, IsFilterable = true });
-            doc.Add(new IndexDocumentField("Date", DateTime.Parse(date)) { IsRetrievable = true, IsFilterable = true });
-            doc.Add(new IndexDocumentField("Location", GeoPoint.TryParse(location)) { IsRetrievable = true, IsFilterable = true });
+            doc.AddFilterableString("Code", id);
+            doc.AddFilterableInteger("Size", size);
+            doc.AddFilterableDateTime("Date", DateTime.Parse(date));
+            doc.Add(new IndexDocumentField("Location", GeoPoint.TryParse(location), IndexDocumentFieldValueType.GeoPoint) { IsRetrievable = true, IsFilterable = true });
 
-            doc.Add(new IndexDocumentField("Catalog", "Goods") { IsRetrievable = true, IsFilterable = true, IsCollection = true });
-            doc.Add(new IndexDocumentField("Catalog", "Stuff") { IsRetrievable = true, IsFilterable = true, IsCollection = true });
+            doc.AddFilterableCollection("Catalog", "Goods");
+            doc.AddFilterableCollection("Catalog", "Stuff");
 
-            doc.Add(new IndexDocumentField("NumericCollection", size) { IsRetrievable = true, IsFilterable = true, IsCollection = true });
-            doc.Add(new IndexDocumentField("NumericCollection", 10) { IsRetrievable = true, IsFilterable = true, IsCollection = true });
-            doc.Add(new IndexDocumentField("NumericCollection", 20) { IsRetrievable = true, IsFilterable = true, IsCollection = true });
+            doc.Add(new IndexDocumentField("NumericCollection", size, IndexDocumentFieldValueType.Integer) { IsRetrievable = true, IsFilterable = true, IsCollection = true });
+            doc.Add(new IndexDocumentField("NumericCollection", 10, IndexDocumentFieldValueType.Integer) { IsRetrievable = true, IsFilterable = true, IsCollection = true });
+            doc.Add(new IndexDocumentField("NumericCollection", 20, IndexDocumentFieldValueType.Integer) { IsRetrievable = true, IsFilterable = true, IsCollection = true });
 
-            doc.Add(new IndexDocumentField("Is", "Priced") { IsFilterable = true, IsCollection = true });
-            doc.Add(new IndexDocumentField("Is", color) { IsFilterable = true, IsCollection = true });
-            doc.Add(new IndexDocumentField("Is", id) { IsFilterable = true, IsCollection = true });
+            doc.AddFilterableCollection("Is", "Priced");
+            doc.AddFilterableCollection("Is", color);
+            doc.AddFilterableCollection("Is", id);
 
-            doc.Add(new IndexDocumentField("StoredField", "This value should not be processed in any way, it is just stored in the index.") { IsRetrievable = true });
+            doc.Add(new IndexDocumentField("StoredField", "This value should not be processed in any way, it is just stored in the index.", IndexDocumentFieldValueType.String) { IsRetrievable = true });
 
             foreach (var price in prices)
             {
-                doc.Add(new IndexDocumentField($"Price_{price.Currency}_{price.Pricelist}", price.Amount) { IsRetrievable = true, IsFilterable = true, IsCollection = true });
-                doc.Add(new IndexDocumentField($"Price_{price.Currency}", price.Amount) { IsRetrievable = true, IsFilterable = true, IsCollection = true });
+                doc.Add(new IndexDocumentField($"Price_{price.Currency}_{price.Pricelist}", price.Amount, IndexDocumentFieldValueType.Decimal) { IsRetrievable = true, IsFilterable = true, IsCollection = true });
+                doc.Add(new IndexDocumentField($"Price_{price.Currency}", price.Amount, IndexDocumentFieldValueType.Decimal) { IsRetrievable = true, IsFilterable = true, IsCollection = true });
             }
 
-            var hasMultiplePrices = prices.Length > 1;
-            doc.Add(new IndexDocumentField("HasMultiplePrices", hasMultiplePrices) { IsRetrievable = true, IsFilterable = true });
+            doc.AddFilterableBoolean("HasMultiplePrices", prices.Length > 1);
 
             // Adds extra fields to test mapping updates for indexer
             if (name2 != null)
             {
-                doc.Add(new IndexDocumentField("Name 2", name2) { IsRetrievable = true, IsFilterable = true });
+                doc.AddFilterableString("Name 2", name2);
             }
 
             if (date2 != null)
             {
-                doc.Add(new IndexDocumentField("Date (2)", date2) { IsRetrievable = true, IsFilterable = true });
+                doc.AddFilterableDateTime("Date (2)", date2.Value);
             }
 
-            doc.Add(new IndexDocumentField("__obj", obj) { IsRetrievable = true, IsFilterable = true });
+            doc.Add(new IndexDocumentField("__obj", obj, IndexDocumentFieldValueType.Complex) { IsRetrievable = true, IsFilterable = true });
 
             return doc;
         }
