@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
 using Xunit;
+using static VirtoCommerce.SearchModule.Core.Extensions.IndexDocumentExtensions;
 
 namespace VirtoCommerce.ElasticSearchModule.Tests
 {
@@ -20,7 +21,13 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             // Delete index
             await provider.DeleteIndexAsync(DocumentType);
 
-            // Create index and add documents
+            // Create index
+            if (provider is ISupportIndexCreate supportIndexCreate)
+            {
+                await supportIndexCreate.CreateIndexAsync(DocumentType, BuildSchema());
+            }
+
+            // Add documents to the backup index
             var primaryDocuments = GetPrimaryDocuments();
 
             IndexingResult response;
@@ -234,7 +241,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             var request = new SearchRequest
             {
                 SearchKeywords = " shirt ",
-                SearchFields = new[] { "Content" },
+                SearchFields = new[] { ContentFieldName },
                 Take = 10,
             };
 
@@ -246,7 +253,7 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
             request = new SearchRequest
             {
                 SearchKeywords = "red shirt",
-                SearchFields = new[] { "Content" },
+                SearchFields = new[] { ContentFieldName },
                 Take = 10,
             };
 
