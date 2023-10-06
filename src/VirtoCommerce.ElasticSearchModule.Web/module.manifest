@@ -8,7 +8,7 @@
     <dependency id="VirtoCommerce.Search" version="3.223.0" />
   </dependencies>
   <title>Elastic Search</title>
-  <description>Indexed search functionality with Elastic engine</description>
+  <description>Indexed search functionality with Elasticsearch and OpenSearch engines</description>
   <authors>
     <author>Artem Dudarev</author>
   </authors>
