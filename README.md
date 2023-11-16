@@ -3,13 +3,14 @@
 [![CI status](https://github.com/VirtoCommerce/vc-module-elastic-search/workflows/Module%20CI/badge.svg?branch=dev)](https://github.com/VirtoCommerce/vc-module-elastic-search/actions?query=workflow%3A"Module+CI") [![Quality gate](https://sonarcloud.io/api/project_badges/measure?project=VirtoCommerce_vc-module-elastic-search&metric=alert_status&branch=dev)](https://sonarcloud.io/dashboard?id=VirtoCommerce_vc-module-elastic-search) [![Reliability rating](https://sonarcloud.io/api/project_badges/measure?project=VirtoCommerce_vc-module-elastic-search&metric=reliability_rating&branch=dev)](https://sonarcloud.io/dashboard?id=VirtoCommerce_vc-module-elastic-search) [![Security rating](https://sonarcloud.io/api/project_badges/measure?project=VirtoCommerce_vc-module-elastic-search&metric=security_rating&branch=dev)](https://sonarcloud.io/dashboard?id=VirtoCommerce_vc-module-elastic-search) [![Sqale rating](https://sonarcloud.io/api/project_badges/measure?project=VirtoCommerce_vc-module-elastic-search&metric=sqale_rating&branch=dev)](https://sonarcloud.io/dashboard?id=VirtoCommerce_vc-module-elastic-search)
 
 ## Overview
-The Virto Commerce Elastic Search module implements the ISearchProvider defined in the VirtoCommerce Search module. It leverages the Elasticsearch engine to store indexed documents.
+The Virto Commerce Elastic Search module implements the ISearchProvider defined in the VirtoCommerce Search module. It leverages the Elasticsearch and OpenSearch engines to store indexed documents.
 
 The module supports the following Elasticsearch deployment options:
 
 * Standalone [Elasticsearch](https://www.elastic.co/products/elasticsearch)
 * [Elastic Cloud](https://cloud.elastic.co/)
-* [Amazon OpenSearch Service](https://aws.amazon.com/opensearch-service/) (successor to Amazon Elasticsearch Service)
+* [OpenSearch](https://opensearch.org/)
+* [Amazon OpenSearch Service](https://aws.amazon.com/opensearch-service/)
 
 ## Configuration
 The Elastic Search provider can be configured using the following keys:
@@ -29,7 +30,10 @@ For more information about configuration settings, refer to the [Virto Commerce 
 Here are some sample configurations for different scenarios:
 
 ### Elastic Cloud v8.x
-For Elastic Cloud v8.x, use the following configuration:
+
+> Virto Commerce has native [Elasticsearch 8.x module](https://github.com/VirtoCommerce/vc-module-elastic-search-8). The current module works with Elasticsearch 8.x in compatibility mode. 
+
+For Elastic Cloud v8.x, use the following configuration and enable the compatibility mode:
 
 ```json
 "Search": {
