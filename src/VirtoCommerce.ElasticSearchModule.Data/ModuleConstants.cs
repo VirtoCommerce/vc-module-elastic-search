@@ -7,6 +7,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
     [ExcludeFromCodeCoverage]
     public static class ModuleConstants
     {
+        public const string ProviderName = "ElasticSearch";
+
         public static class Settings
         {
             public static class Indexing
