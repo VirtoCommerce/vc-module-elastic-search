@@ -20,12 +20,15 @@ namespace VirtoCommerce.ElasticSearchModule.Web
 
         public void Initialize(IServiceCollection serviceCollection)
         {
-            serviceCollection.Configure<ElasticSearchOptions>(Configuration.GetSection("Search:ElasticSearch"));
-            serviceCollection.AddTransient<ElasticSearchRequestBuilder>();
-            serviceCollection.AddSingleton<IConnectionSettingsValues, ElasticSearchConnectionSettings>();
-            serviceCollection.AddSingleton<IElasticClient, ElasticSearchClient>();
-            serviceCollection.AddSingleton<ElasticSearchProvider>();
-            serviceCollection.AddHealthChecks().AddCheck<ElasticHealthChecker>("Elastic server connection", tags: new[] { "Modules", "Elastic" });
+            if (Configuration.SearchProviderActive(ModuleConstants.ProviderName))
+            {
+                serviceCollection.Configure<ElasticSearchOptions>(Configuration.GetSection($"Search:{ModuleConstants.ProviderName}"));
+                serviceCollection.AddTransient<ElasticSearchRequestBuilder>();
+                serviceCollection.AddSingleton<IConnectionSettingsValues, ElasticSearchConnectionSettings>();
+                serviceCollection.AddSingleton<IElasticClient, ElasticSearchClient>();
+                serviceCollection.AddSingleton<ElasticSearchProvider>();
+                serviceCollection.AddHealthChecks().AddCheck<ElasticHealthChecker>("Elastic server connection", tags: new[] { "Modules", "Elastic" });
+            }
         }
 
         public void PostInitialize(IApplicationBuilder appBuilder)
@@ -33,10 +36,13 @@ namespace VirtoCommerce.ElasticSearchModule.Web
             var settingsRegistrar = appBuilder.ApplicationServices.GetRequiredService<ISettingsRegistrar>();
             settingsRegistrar.RegisterSettings(ModuleConstants.Settings.AllSettings, ModuleInfo.Id);
 
-            var provider = appBuilder.UseSearchProvider<ElasticSearchProvider>("ElasticSearch");
-            var documentConfigs = appBuilder.ApplicationServices.GetRequiredService<IEnumerable<IndexDocumentConfiguration>>();
-            var documentTypes = documentConfigs.Select(c => c.DocumentType).Distinct();
-            provider.AddActiveAlias(documentTypes);
+            if (Configuration.SearchProviderActive(ModuleConstants.ProviderName))
+            {
+                var provider = appBuilder.UseSearchProvider<ElasticSearchProvider>(ModuleConstants.ProviderName);
+                var documentConfigs = appBuilder.ApplicationServices.GetRequiredService<IEnumerable<IndexDocumentConfiguration>>();
+                var documentTypes = documentConfigs.Select(c => c.DocumentType).Distinct();
+                provider.AddActiveAlias(documentTypes);
+            }
         }
 
         public void Uninstall()
