@@ -239,7 +239,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 throw new SearchException(ex.Message, ex);
             }
 
-            if (!providerResponse.IsValid)
+            if (!providerResponse.IsValid && providerResponse.ApiCall.HttpStatusCode != (int)HttpStatusCode.NotFound)
             {
                 ThrowException(providerResponse.DebugInformation, null);
             }
@@ -319,7 +319,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 throw new SearchException(ex.Message, ex);
             }
 
-            if (!providerResponse.IsValid)
+            if (!providerResponse.IsValid && providerResponse.ApiCall.HttpStatusCode != (int)HttpStatusCode.NotFound)
             {
                 ThrowException(providerResponse.DebugInformation, null);
             }
