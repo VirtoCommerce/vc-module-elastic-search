@@ -1,15 +1,13 @@
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Nest;
 using VirtoCommerce.ElasticSearchModule.Data;
+using VirtoCommerce.ElasticSearchModule.Data.Extensions;
 using VirtoCommerce.ElasticSearchModule.Web.Infrastructure;
 using VirtoCommerce.Platform.Core.Modularity;
 using VirtoCommerce.Platform.Core.Settings;
 using VirtoCommerce.SearchModule.Core.Extensions;
-using VirtoCommerce.SearchModule.Core.Model;
 
 namespace VirtoCommerce.ElasticSearchModule.Web
 {
@@ -38,10 +36,10 @@ namespace VirtoCommerce.ElasticSearchModule.Web
 
             if (Configuration.SearchProviderActive(ModuleConstants.ProviderName))
             {
-                var provider = appBuilder.UseSearchProvider<ElasticSearchProvider>(ModuleConstants.ProviderName);
-                var documentConfigs = appBuilder.ApplicationServices.GetRequiredService<IEnumerable<IndexDocumentConfiguration>>();
-                var documentTypes = documentConfigs.Select(c => c.DocumentType).Distinct();
-                provider.AddActiveAlias(documentTypes);
+                appBuilder.UseSearchProvider<ElasticSearchProvider>(ModuleConstants.ProviderName, (provider, documentTypes) =>
+                {
+                    provider.AddActiveAlias(documentTypes);
+                });
             }
         }
 
