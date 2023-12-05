@@ -221,10 +221,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         public virtual async Task<SearchResponse> SearchAsync(string documentType, SearchRequest request)
         {
-            var alias = request.UseBackupIndex
-                ? BackupIndexAlias
-                : ActiveIndexAlias;
-            var indexName = GetIndexAlias(alias, documentType);
+            var indexName = GetIndexName(request.UseBackupIndex, documentType);
 
             ISearchResponse<SearchDocument> providerResponse;
 
@@ -239,7 +236,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 throw new SearchException(ex.Message, ex);
             }
 
-            if (!providerResponse.IsValid)
+            if (!providerResponse.IsValid && providerResponse.ApiCall.HttpStatusCode != (int)HttpStatusCode.NotFound)
             {
                 ThrowException(providerResponse.DebugInformation, null);
             }
@@ -278,10 +275,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         public virtual async Task<SuggestionResponse> GetSuggestionsAsync(string documentType, SuggestionRequest request)
         {
-            var alias = request.UseBackupIndex
-                ? BackupIndexAlias
-                : ActiveIndexAlias;
-            var indexName = GetIndexAlias(alias, documentType);
+            var indexName = GetIndexName(request.UseBackupIndex, documentType);
 
             ISearchResponse<SearchDocument> providerResponse;
 
@@ -319,7 +313,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 throw new SearchException(ex.Message, ex);
             }
 
-            if (!providerResponse.IsValid)
+            if (!providerResponse.IsValid && providerResponse.ApiCall.HttpStatusCode != (int)HttpStatusCode.NotFound)
             {
                 ThrowException(providerResponse.DebugInformation, null);
             }
@@ -378,12 +372,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         {
             await DeleteDuplicateIndexes(documentType);
 
-            // Use backup index in case of reindexing
-            var alias = parameters.Reindex
-                ? BackupIndexAlias
-                : ActiveIndexAlias;
-
-            var indexName = GetIndexAlias(alias, documentType);
+            var indexName = GetIndexName(parameters.Reindex, documentType);
             var providerFields = new Properties<IProperties>(await GetMappingAsync(indexName)); // Make a copy
             var oldFieldsCount = providerFields.Count();
             var providerDocuments = documents.Select(document => ConvertToProviderDocument(document, providerFields)).ToList();
@@ -738,6 +727,15 @@ namespace VirtoCommerce.ElasticSearchModule.Data
         protected virtual string GetIndexName(string documentType, string suffix)
         {
             return string.Join("-", _searchOptions.GetScope(documentType), documentType, suffix).ToLowerInvariant();
+        }
+
+        protected virtual string GetIndexName(bool useBackupIndex, string documentType)
+        {
+            var alias = useBackupIndex
+                ? BackupIndexAlias
+                : ActiveIndexAlias;
+
+            return GetIndexAlias(alias, documentType);
         }
 
         /// <summary>
