@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
-    <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
-        <IsPackable>False</IsPackable>
-        <OutputType>Library</OutputType>
-    </PropertyGroup>
-    <PropertyGroup>
-        <!-- Project is not a test project -->
-        <SonarQubeTestProject>false</SonarQubeTestProject>
-    </PropertyGroup>
-    <ItemGroup>
-        <ProjectReference Include="..\VirtoCommerce.ElasticSearchModule.Data\VirtoCommerce.ElasticSearchModule.Data.csproj" />
-    </ItemGroup>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>False</IsPackable>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Project is not a test project -->
+    <SonarQubeTestProject>false</SonarQubeTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\VirtoCommerce.ElasticSearchModule.Data\VirtoCommerce.ElasticSearchModule.Data.csproj" />
+  </ItemGroup>
 </Project>
