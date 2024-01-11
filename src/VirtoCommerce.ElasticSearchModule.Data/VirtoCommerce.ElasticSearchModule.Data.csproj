@@ -1,22 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
-        <noWarn>1591</noWarn>
-        <PublishRepositoryUrl>true</PublishRepositoryUrl>
-        <EmbedUntrackedSources>true</EmbedUntrackedSources>
-        <IncludeSymbols>true</IncludeSymbols>
-        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    </PropertyGroup>
-    <PropertyGroup>
-        <!-- Project is not a test project -->
-        <SonarQubeTestProject>false</SonarQubeTestProject>
-    </PropertyGroup>
-    <ItemGroup>
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
-        <PackageReference Include="Elasticsearch.Net" Version="7.17.4" />
-        <PackageReference Include="NEST" Version="7.15.2" />
-        <PackageReference Include="NEST.JsonNetSerializer" Version="7.15.2" />
-        <PackageReference Include="VirtoCommerce.Platform.Core" Version="3.400.0" />
-        <PackageReference Include="VirtoCommerce.SearchModule.Core" Version="3.404.0" />
-    </ItemGroup>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <noWarn>1591</noWarn>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Project is not a test project -->
+    <SonarQubeTestProject>false</SonarQubeTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <PackageReference Include="Elasticsearch.Net" Version="7.17.5" />
+    <PackageReference Include="NEST" Version="7.17.5" />
+    <PackageReference Include="NEST.JsonNetSerializer" Version="7.17.5" />
+    <PackageReference Include="VirtoCommerce.Platform.Core" Version="3.800.0" />
+    <PackageReference Include="VirtoCommerce.SearchModule.Core" Version="3.800.0" />
+  </ItemGroup>
 </Project>
