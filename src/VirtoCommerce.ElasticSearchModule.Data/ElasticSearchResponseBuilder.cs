@@ -124,7 +124,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                         {
                             var aggregationValue = new AggregationResponseValue
                             {
-                                Id = term.Key.ToStringInvariant(),
+                                Id = term.KeyAsString ?? term.Key.ToStringInvariant(),
                                 Count = term.DocCount ?? 0
                             };
 
