@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Nest;
 using Newtonsoft.Json.Linq;
+using VirtoCommerce.SearchModule.Core.Extensions;
 using VirtoCommerce.SearchModule.Core.Model;
 using SearchRequest = VirtoCommerce.SearchModule.Core.Model.SearchRequest;
 
@@ -45,6 +46,8 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     result.Add(name, value);
                 }
             }
+
+            result.SetRelevanceScore(hit.Score);
 
             return result;
         }
