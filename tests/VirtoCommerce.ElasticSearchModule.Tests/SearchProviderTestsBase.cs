@@ -52,11 +52,11 @@ namespace VirtoCommerce.ElasticSearchModule.Tests
         {
             return new List<IndexDocument>
             {
-                CreateDocument("Item-6", "Blue Shirt", "Blue", "2017-04-23T15:24:31.180Z", 10, "0,50", "Blue Shirt 2", DateTime.UtcNow, new Price("USD", "default", 23.12m)),
+                CreateDocument("Item-6", "Blue Shirt", "Blue", "2017-04-23T15:24:31.180Z", 10, "0,50", "Blue Shirt 2", DateTime.UtcNow, obj: null, new Price("USD", "default", 23.12m)),
 
                 // The following documents will be deleted by test
-                CreateDocument("Item-7", "Blue Shirt", "Blue", "2017-04-23T15:24:31.180Z", 10, "0,50", "Blue Shirt 2", DateTime.UtcNow, new Price("USD", "default", 23.12m)),
-                CreateDocument("Item-8", "Blue Shirt", "Blue", "2017-04-23T15:24:31.180Z", 10, "0,50", "Blue Shirt 2", DateTime.UtcNow, new Price("USD", "default", 23.12m)),
+                CreateDocument("Item-7", "Blue Shirt", "Blue", "2017-04-23T15:24:31.180Z", 10, "0,50", "Blue Shirt 2", DateTime.UtcNow, obj: null, new Price("USD", "default", 23.12m)),
+                CreateDocument("Item-8", "Blue Shirt", "Blue", "2017-04-23T15:24:31.180Z", 10, "0,50", "Blue Shirt 2", DateTime.UtcNow, obj: null, new Price("USD", "default", 23.12m)),
             };
         }
 
