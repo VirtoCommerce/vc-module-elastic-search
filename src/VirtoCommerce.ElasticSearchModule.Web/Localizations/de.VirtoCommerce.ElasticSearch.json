@@ -1,0 +1,28 @@
+{
+  "settings": {
+    "VirtoCommerce.Search.ElasticSearch": {
+      "IndexTotalFieldsLimit": {
+        "title": "Maximale Anzahl von Feldern im Index",
+        "description": "Gibt die maximale Anzahl von Feldern an, die in einem Index enthalten sein können. Das Überschreiten dieses Limits kann zu Leistungsproblemen führen. Weitere Informationen finden Sie in der Elasticsearch-Dokumentation: https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html#mapping-limit-settings"
+      },
+      "TokenFilter": {
+        "title": "Token-Filter",
+        "description": "Wählen Sie den Token-Filter aus, der beim Indizieren durchsuchbarer Felder angewendet wird. Dies erfordert den Neuaufbau des Indexes"
+      },
+      "NGramTokenFilter": {
+        "MinGram": {
+          "title": "Minimale Gram-Länge",
+          "description": "Die minimale Anzahl von Zeichen in einem Gram. Dies erfordert den Neuaufbau des Indexes"
+        },
+        "MaxGram": {
+          "title": "Maximale Gram-Länge",
+          "description": "Die maximale Anzahl von Zeichen in einem Gram. Dies erfordert den Neuaufbau des Indexes"
+        }
+      },
+      "DeleteDuplicateIndexes": {
+        "title": "Duplizierte aktive Indizes löschen",
+        "description": "Suchen und löschen Sie duplizierte aktive Indizes vor der 'Löschen und Neuaufbauen'-Operation"
+      }
+    }
+  }
+}
