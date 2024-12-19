@@ -1,0 +1,28 @@
+{
+  "settings": {
+    "VirtoCommerce.Search.ElasticSearch": {
+      "IndexTotalFieldsLimit": {
+        "title": "インデックス内のフィールドの最大数",
+        "description": "インデックスに含めることができるフィールドの最大数を指定します。この制限を超えるとパフォーマンスの問題が発生する可能性があります。詳細は、Elasticsearchのドキュメントをご参照ください：https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html#mapping-limit-settings"
+      },
+      "TokenFilter": {
+        "title": "トークンフィルター",
+        "description": "検索可能なフィールドをインデックス化する際に適用するトークンフィルターを選択してください。インデックスの再構築が必要です"
+      },
+      "NGramTokenFilter": {
+        "MinGram": {
+          "title": "最小グラム長",
+          "description": "グラム内の最小文字数。この操作にはインデックスの再構築が必要です"
+        },
+        "MaxGram": {
+          "title": "最大グラム長",
+          "description": "グラム内の最大文字数。この操作にはインデックスの再構築が必要です"
+        }
+      },
+      "DeleteDuplicateIndexes": {
+        "title": "重複するアクティブなインデックスの削除",
+        "description": "削除と再構築の操作を行う前に、重複するアクティブなインデックスを検索して削除します"
+      }
+    }
+  }
+}
