@@ -117,18 +117,8 @@ For Elasticsearch v7.x with ApiKey authorization:
 }
 ```
 
-### Amazon OpenSearch Service
-For Amazon OpenSearch Service, use the following configuration:
-
-```json
-"Search": {
-    "Provider": "ElasticSearch",
-    "Scope": "default",
-    "ElasticSearch": {
-        "Server": "https://{master-user}:{master-user-password}@search-test-vc-c74km3tiav64fiimnisw3ghpd4.us-west-1.es.amazonaws.com"
-    }
-}
-```
+### OpenSearch Service
+For OpenSearch Service, use the following [Open Search Module](https://github.com/VirtoCommerce/vc-module-open-search):
 
 
 ## Documentation
