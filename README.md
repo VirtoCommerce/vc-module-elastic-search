@@ -2,7 +2,6 @@
 
 [![CI status](https://github.com/VirtoCommerce/vc-module-elastic-search/workflows/Module%20CI/badge.svg?branch=dev)](https://github.com/VirtoCommerce/vc-module-elastic-search/actions?query=workflow%3A"Module+CI") [![Quality gate](https://sonarcloud.io/api/project_badges/measure?project=VirtoCommerce_vc-module-elastic-search&metric=alert_status&branch=dev)](https://sonarcloud.io/dashboard?id=VirtoCommerce_vc-module-elastic-search) [![Reliability rating](https://sonarcloud.io/api/project_badges/measure?project=VirtoCommerce_vc-module-elastic-search&metric=reliability_rating&branch=dev)](https://sonarcloud.io/dashboard?id=VirtoCommerce_vc-module-elastic-search) [![Security rating](https://sonarcloud.io/api/project_badges/measure?project=VirtoCommerce_vc-module-elastic-search&metric=security_rating&branch=dev)](https://sonarcloud.io/dashboard?id=VirtoCommerce_vc-module-elastic-search) [![Sqale rating](https://sonarcloud.io/api/project_badges/measure?project=VirtoCommerce_vc-module-elastic-search&metric=sqale_rating&branch=dev)](https://sonarcloud.io/dashboard?id=VirtoCommerce_vc-module-elastic-search)
 
-## Overview
 The Virto Commerce Elastic Search module implements the ISearchProvider defined in the VirtoCommerce Search module. It leverages the Elasticsearch and OpenSearch engines to store indexed documents.
 
 The module supports the following Elasticsearch deployment options:
@@ -118,31 +117,25 @@ For Elasticsearch v7.x with ApiKey authorization:
 }
 ```
 
-### Amazon OpenSearch Service
-For Amazon OpenSearch Service, use the following configuration:
-
-```json
-"Search": {
-    "Provider": "ElasticSearch",
-    "Scope": "default",
-    "ElasticSearch": {
-        "Server": "https://{master-user}:{master-user-password}@search-test-vc-c74km3tiav64fiimnisw3ghpd4.us-west-1.es.amazonaws.com"
-    }
-}
-```
+### OpenSearch Service
+For OpenSearch Service, use the following [Open Search Module](https://github.com/VirtoCommerce/vc-module-open-search):
 
 
 ## Documentation
-* [Search Fundamentals](https://virtocommerce.com/docs/fundamentals/search/)
-* [Module Documentation](https://docs.virtocommerce.org/modules/elastic-search/)
-* [View on GitHub](docs/index.md)
+
+* [Elastic Search module user documentation](https://docs.virtocommerce.org/platform/user-guide/elastic-search/overview/)
+* [Elastic Search module developer documentation](https://docs.virtocommerce.org/platform/developer-guide/Fundamentals/Indexed-Search/integration/configuring-elasticsearch/)
+* [REST API](https://virtostart-demo-admin.govirto.com/docs/index.html?urls.primaryName=VirtoCommerce.Search)
+* [Elastic Search configuration](https://docs.virtocommerce.org/platform/developer-guide/Configuration-Reference/appsettingsjson/#elasticsearch)
+* [View on GitHub](https://github.com/VirtoCommerce/vc-module-elastic-search)
 
 ## References
-* Deployment: https://docs.virtocommerce.org/docs/latest/developer-guide/deploy-module-from-source-code/
-* Installation: https://docs.virtocommerce.org/docs/latest/user-guide/modules/
-* Home: https://virtocommerce.com
-* Community: https://www.virtocommerce.org
-* [Download Latest Release](https://github.com/VirtoCommerce/elastic-search/releases/latest)
+
+* [Deployment](https://docs.virtocommerce.org/platform/developer-guide/Tutorials-and-How-tos/Tutorials/deploy-module-from-source-code/)
+* [Installation](https://docs.virtocommerce.org/platform/user-guide/modules-installation/)
+* [Home](https://virtocommerce.com)
+* [Community](https://www.virtocommerce.org)
+* [Download latest release](https://github.com/VirtoCommerce/vc-module-elastic-search/releases/latest)
 
 ## License
 
