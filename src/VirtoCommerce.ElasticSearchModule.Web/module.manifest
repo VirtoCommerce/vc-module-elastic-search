@@ -25,8 +25,5 @@
   <tags>elastic search</tags>
   <assemblyFile>VirtoCommerce.ElasticSearchModule.Web.dll</assemblyFile>
   <moduleType>VirtoCommerce.ElasticSearchModule.Web.Module, VirtoCommerce.ElasticSearchModule.Web</moduleType>
-  <groups>
-    <group>commerce</group>
-  </groups>
   <useFullTypeNameInSwagger>false</useFullTypeNameInSwagger>
 </module>
