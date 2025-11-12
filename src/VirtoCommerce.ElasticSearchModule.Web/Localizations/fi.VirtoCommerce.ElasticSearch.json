@@ -1,0 +1,28 @@
+{
+  "settings": {
+    "VirtoCommerce.Search.ElasticSearch": {
+      "IndexTotalFieldsLimit": {
+        "title": "Indeksin kenttien enimmäismäärä",
+        "description": "Määritä indeksiin sisällytettävien kenttien enimmäismäärä. Tämän rajan ylittäminen voi aiheuttaa suorituskykyongelmia. Lisätietoja Elasticsearch-dokumentaatiosta: https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html#mapping-limit-settings"
+      },
+      "TokenFilter": {
+        "title": "Token-suodatin",
+        "description": "Valitse token-suodatin, jota käytetään haettavien kenttien indeksoinnissa. Tämä vaatii indeksin uudelleenrakentamisen"
+      },
+      "NGramTokenFilter": {
+        "MinGram": {
+          "title": "Minimi gram-pituus",
+          "description": "Grammin pienin merkkimäärä. Tämä vaatii indeksin uudelleenrakentamisen"
+        },
+        "MaxGram": {
+          "title": "Maksimi gram-pituus",
+          "description": "Grammin suurin merkkimäärä. Tämä vaatii indeksin uudelleenrakentamisen"
+        }
+      },
+      "DeleteDuplicateIndexes": {
+        "title": "Kaksoiskappaleiden aktiivisten indeksien poistaminen",
+        "description": "Etsi ja poista kaksoiskappaleet aktiivisista indekseistä ennen Poista ja rakenna -toimintoa"
+      }
+    }
+  }
+}

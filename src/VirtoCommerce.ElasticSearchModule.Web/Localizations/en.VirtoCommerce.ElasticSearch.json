@@ -21,7 +21,7 @@
       },
       "DeleteDuplicateIndexes": {
         "title": "Deleting duplicate active indexes",
-        "description": "Search and delete duplicate active indexes before Delete and build operation"
+        "description": "Search and delete duplicate active indexes before Delete and Build operation"
       }
     }
   }
