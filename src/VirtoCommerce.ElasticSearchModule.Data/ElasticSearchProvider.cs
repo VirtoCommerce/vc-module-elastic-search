@@ -96,7 +96,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                 else
                 {
                     // attach alias to default index
-                    await Client.Indices.PutAliasAsync(indexName, activeIndexAlias);
+                    await Client.Indices.PutAliasAsync(indexName, activeIndexAlias, p => p.IsWriteIndex(true));
                 }
 
             }
@@ -120,10 +120,10 @@ namespace VirtoCommerce.ElasticSearchModule.Data
             if (!string.IsNullOrEmpty(backupIndexName))
             {
                 bulkAliasDescriptor.Remove(x => x.Index(backupIndexName).Alias(backupIndexAlias));
-                bulkAliasDescriptor.Add(a => a.Index(backupIndexName).Alias(activeIndexAlias));
+                bulkAliasDescriptor.Add(a => a.Index(backupIndexName).Alias(activeIndexAlias).IsWriteIndex(true));
             }
 
-            bulkAliasDescriptor.Add(a => a.Index(activeIndexName).Alias(backupIndexAlias));
+            bulkAliasDescriptor.Add(a => a.Index(activeIndexName).Alias(backupIndexAlias).IsWriteIndex(true));
 
             var swapResponse = await Client.Indices.BulkAliasAsync(bulkAliasDescriptor);
 
@@ -263,7 +263,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
                     var indexName = GetIndexName(documentType);
                     if (IndexExists(indexName))
                     {
-                        Client.Indices.PutAlias(indexName, indexAlias);
+                        Client.Indices.PutAlias(indexName, indexAlias, p => p.IsWriteIndex(true));
                     }
                 }
             }
@@ -803,7 +803,7 @@ namespace VirtoCommerce.ElasticSearchModule.Data
 
         protected virtual AliasesDescriptor ConfigureAliases(AliasesDescriptor aliases, string alias)
         {
-            return aliases.Alias(alias);
+            return aliases.Alias(alias, a => a.IsWriteIndex(true));
         }
 
         protected virtual AnalyzersDescriptor ConfigureAnalyzers(AnalyzersDescriptor analyzers)
